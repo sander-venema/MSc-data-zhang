@@ -16,8 +16,8 @@ img_dir = 'data/seg3D/train/images/'
 mask_dir = 'data/seg3D/train/labels/'
 for k in range(len(file_list)):
     # Load data
-    img_array = np.load(img_dir + file_list[k] + '/SUB2.npy')
-    mask_array = np.load(mask_dir + file_list[k] + '/SUB2.npy')
+    img_array = np.load(img_dir + file_list[k] + '/VIBRANT.npy')
+    mask_array = np.load(mask_dir + file_list[k] + '/VIBRANT.npy')
 
     # Plot all slices along the third dimension
     # num_slices = img_array.shape[2]
@@ -56,4 +56,4 @@ for k in range(len(file_list)):
         axes[i].imshow(stacked_array[:, :, i, 1], cmap='jet', alpha=0.5)
         axes[i].set_title('Slice {}'.format(i))
 
-    plt.savefig('img/benign_VIBRANT/stacked_masks_{}.png'.format(k))
+    plt.savefig('img/benign_VIBRANT/stacked_masks_{}.png'.format(file_list[k]))
