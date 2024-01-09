@@ -1,1 +1,6 @@
 data/
+models/
+runs/
+playground_runs/
+playground/
+generated_images/
