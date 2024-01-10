@@ -8,6 +8,12 @@ from torchvision.utils import save_image
 
 from model_new import Generator, Discriminator
 
+# Define constants
+IMAGE_SIZE = 256
+LEARNING_RATE = 0.0002
+BETAS = (0.5, 0.999)
+BATCH_SIZE = 32
+
 # Define a new dataset class
 class MyDataset(Dataset):
     def __init__(self, root_dir, transform=None):
@@ -31,19 +37,19 @@ D.load_state_dict(torch.load(pretrained_path)["D"], strict=False)
 
 # Define the dataset and data loader
 transform = transforms.Compose([
-    transforms.Resize(256),
+    transforms.Resize(IMAGE_SIZE),
     transforms.ToTensor(),
     transforms.Grayscale(),
     transforms.Normalize((0.5,), (0.5,))
 ])
 
 dataset = MyDataset(root_dir="new_dataset", transform=transform)
-data_loader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=4)
+data_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
 # Define the loss function and optimizers
 criterion = nn.BCELoss()
-optimizer_G = torch.optim.Adam(G.parameters(), lr=0.0002, betas=(0.5, 0.999))
-optimizer_D = torch.optim.Adam(D.parameters(), lr=0.0002, betas=(0.5, 0.999))
+optimizer_G = torch.optim.Adam(G.parameters(), lr=LEARNING_RATE, betas=BETAS)
+optimizer_D = torch.optim.Adam(D.parameters(), lr=LEARNING_RATE, betas=BETAS)
 
 # TensorBoard writer
 writer = SummaryWriter()
@@ -113,7 +119,7 @@ for epoch in range(num_epochs):
         # Print progress
         if i % 100 == 0:
             print(
-                f"[Epoch {epoch}/{num_epochs}] [Batch {i}/{len(data_loader)}] [D loss: {d_loss.item()}] [G loss: {g_loss.item()}]"
+                f"[Epoch {epoch}/{num_epochs}] [D loss: {d_loss.item()}] [G loss: {g_loss.item()}]"
             )
 
     # Save generated images at the end of each epoch
