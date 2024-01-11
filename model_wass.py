@@ -1,6 +1,6 @@
 from torch import nn
 
-IMAGE_SIZE = 256
+IMAGE_SIZE = 369
 
 class Generator(nn.Module):
     def __init__(self, latent_dim=100, img_shape=(1, IMAGE_SIZE, IMAGE_SIZE)):

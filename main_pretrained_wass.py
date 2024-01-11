@@ -1,4 +1,5 @@
 import torch
+import os
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import ImageFolder
@@ -6,13 +7,16 @@ from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import save_image
 
-from model_wass import Generator, Discriminator
+from model_wass_minibatch import Generator, Discriminator
 
 # Define constants
-IMAGE_SIZE = 256
-LEARNING_RATE = 0.00005
+IMAGE_SIZE = 512
+LEARNING_RATE = 0.0001
 BETAS = (0.5, 0.999)
 BATCH_SIZE = 32
+
+# Create directories for saving generated images and model state dictionaries
+os.makedirs("generated_images/wass_minibatch_{0}_{1}".format(IMAGE_SIZE, LEARNING_RATE), exist_ok=True)
 
 # Define a new dataset class
 class MyDataset(Dataset):
@@ -30,14 +34,14 @@ G = Generator().to("cuda")
 D = Discriminator().to("cuda")
 
 # Load pretrained model state dictionaries
-pretrained_path = "models/imagenet-256-state.pt"
+pretrained_path = "models/imagenet-512-state.pt"
 
 G.load_state_dict(torch.load(pretrained_path)["G"], strict=False)
 D.load_state_dict(torch.load(pretrained_path)["D"], strict=False)
 
 # Define the dataset and data loader
 transform = transforms.Compose([
-    transforms.Resize(IMAGE_SIZE),
+    # transforms.Resize(IMAGE_SIZE),
     transforms.ToTensor(),
     transforms.Grayscale(),
     transforms.Normalize((0.5,), (0.5,))
@@ -124,7 +128,7 @@ for epoch in range(num_epochs):
 
     # Save generated images at the end of each epoch
     if (epoch + 1) % 10 == 0:
-        save_image(fake_imgs.data[:25], f"generated_images/epoch_{epoch + 1}.png", nrow=5, normalize=True)
+        save_image(fake_imgs.data[:25], f"generated_images/wass_minibatch_{IMAGE_SIZE}_{LEARNING_RATE}/epoch_{epoch + 1}.png", nrow=5, normalize=True)
 
     # Calculate and log discriminator accuracy
     accuracy_real = correct_real / total_real
@@ -139,3 +143,9 @@ for epoch in range(num_epochs):
 
 # Close TensorBoard writer
 writer.close()
+
+# Save the model state dictionaries
+torch.save({
+    "G": G.state_dict(),
+    "D": D.state_dict()
+}, f"saved_models/{IMAGE_SIZE}_{LEARNING_RATE}_wass_minibatch.pt")
