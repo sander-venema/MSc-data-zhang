@@ -10,7 +10,7 @@ from model_wass import Generator, Discriminator
 
 # Define constants
 IMAGE_SIZE = 256
-LEARNING_RATE = 0.0002
+LEARNING_RATE = 0.00005
 BETAS = (0.5, 0.999)
 BATCH_SIZE = 32
 
@@ -48,8 +48,8 @@ data_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_worke
 
 # Define the loss function and optimizers
 # criterion = 
-optimizer_G = torch.optim.Adam(G.parameters(), lr=LEARNING_RATE, betas=BETAS)
-optimizer_D = torch.optim.Adam(D.parameters(), lr=LEARNING_RATE, betas=BETAS)
+optimizer_G = torch.optim.RMSprop(G.parameters(), lr=LEARNING_RATE)
+optimizer_D = torch.optim.RMSprop(D.parameters(), lr=LEARNING_RATE)
 
 # TensorBoard writer
 writer = SummaryWriter()
