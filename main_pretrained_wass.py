@@ -7,16 +7,18 @@ from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import save_image
 
-from model_wass_minibatch import Generator, Discriminator
+from model_wass import Generator, Discriminator
+
+from tqdm import tqdm
 
 # Define constants
 IMAGE_SIZE = 512
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.000075
 BETAS = (0.5, 0.999)
 BATCH_SIZE = 32
 
 # Create directories for saving generated images and model state dictionaries
-os.makedirs("generated_images/wass_minibatch_{0}_{1}".format(IMAGE_SIZE, LEARNING_RATE), exist_ok=True)
+os.makedirs("generated_images/wass_{0}_{1}".format(IMAGE_SIZE, LEARNING_RATE), exist_ok=True)
 
 # Define a new dataset class
 class MyDataset(Dataset):
@@ -62,7 +64,7 @@ num_epochs = 500
 latent_dim = 100
 
 # Training loop
-for epoch in range(num_epochs):
+for epoch in tqdm(range(num_epochs)):
     total_real = 0
     correct_real = 0
     total_fake = 0
@@ -121,14 +123,14 @@ for epoch in range(num_epochs):
         optimizer_G.step()
 
         # Print progress
-        if i % 100 == 0:
-            print(
-                f"[Epoch {epoch}/{num_epochs}] [D loss: {d_loss.item()}] [G loss: {g_loss.item()}]"
-            )
+        # if i % 100 == 0:
+        #     print(
+        #         f"[Epoch {epoch}/{num_epochs}] [D loss: {d_loss.item()}] [G loss: {g_loss.item()}]"
+        #     )
 
     # Save generated images at the end of each epoch
     if (epoch + 1) % 10 == 0:
-        save_image(fake_imgs.data[:25], f"generated_images/wass_minibatch_{IMAGE_SIZE}_{LEARNING_RATE}/epoch_{epoch + 1}.png", nrow=5, normalize=True)
+        save_image(fake_imgs.data[:25], f"generated_images/wass_{IMAGE_SIZE}_{LEARNING_RATE}/epoch_{epoch + 1}.png", nrow=5, normalize=True)
 
     # Calculate and log discriminator accuracy
     accuracy_real = correct_real / total_real
@@ -148,4 +150,4 @@ writer.close()
 torch.save({
     "G": G.state_dict(),
     "D": D.state_dict()
-}, f"saved_models/{IMAGE_SIZE}_{LEARNING_RATE}_wass_minibatch.pt")
+}, f"saved_models/{IMAGE_SIZE}_{LEARNING_RATE}_wass.pt")
