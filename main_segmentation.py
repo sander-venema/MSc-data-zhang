@@ -7,6 +7,8 @@ from torchvision.datasets import ImageFolder
 from torchvision.models.segmentation import deeplabv3_resnet101
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import numpy as np
+from PIL import Image
 
 # Define the path to the dataset
 dataset_path = "new_dataset"
@@ -33,8 +35,9 @@ image_transforms = transforms.Compose([
 
 mask_transforms = transforms.Compose([
     transforms.Resize((369, 369)),
-    transforms.Grayscale(num_output_channels=3),
-    transforms.ToTensor()
+    transforms.Grayscale(num_output_channels=1),
+    transforms.ToTensor(),
+    transforms.Lambda(lambda x: torch.round(x)),
 ])
 
 # Load the dataset
@@ -54,19 +57,19 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
 # Load the pre-trained Deeplabv3 ResNet 101 model
-model = deeplabv3_resnet101(pretrained=True)
+model = deeplabv3_resnet101(weights="DeepLabV3_ResNet101_Weights.DEFAULT")
 
 # Replace the classifier with a new one
 model.classifier = nn.Sequential(
     nn.Conv2d(2048, 256, kernel_size=3, stride=1, padding=1, bias=False),
     nn.BatchNorm2d(256),
     nn.ReLU(),
-    nn.Conv2d(256, 3, kernel_size=1, stride=1)
-
+    nn.Conv2d(256, 1, kernel_size=1, stride=1),
+    nn.Sigmoid()
 )
 
 # Define the loss function
-criterion = nn.CrossEntropyLoss()
+criterion = nn.BCELoss()
 
 # Define the optimizer
 optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -90,7 +93,6 @@ for epoch in tqdm(range(num_epochs)):
 
     # Iterate over the training data
     for i, (images, masks) in enumerate(train_loader):
-        print(f"Batch {i + 1}/{len(train_loader)}")
         # Move the images and masks to the device
         images = images.to(device)
         masks = masks.to(device)
@@ -100,11 +102,11 @@ for epoch in tqdm(range(num_epochs)):
 
         # Forward pass
         outputs = model(images)["out"]
-        # print(outputs.shape)
-        # print(masks.shape)
 
         # Compute the loss
         loss = criterion(outputs, masks.to(torch.float32))
+        if i%10 == 0:
+            print(f"Training Batch {i + 1}/{len(train_loader)}, Loss: {loss.item():.4f}")
 
         # Backward pass
         loss.backward()
@@ -125,8 +127,8 @@ for epoch in tqdm(range(num_epochs)):
     model.eval()
 
     # Initialize the running accuracy
-    total_pixels = 0
-    correct_pixels = 0
+    total_white_pixels = 0
+    correct_white_pixels = 0
 
     # Iterate over the validation data
     for i, (images, masks) in enumerate(val_loader):
@@ -137,15 +139,31 @@ for epoch in tqdm(range(num_epochs)):
         # Forward pass
         outputs = model(images)["out"]
 
+        for j in range(len(outputs)):
+            output = outputs[j]
+            output_binary = (output > 0.5).float()
+            correct_white_pixels += (output_binary == masks).logical_and(masks == 1).sum().item()
+            total_white_pixels += masks.eq(1).sum().item()
+       
+        if i%10 == 0:
+            print(f"Validation Batch {i + 1}/{len(val_loader)} Accuracy: {correct_white_pixels / total_white_pixels:.4f}")
+
+        # # Save the predicted mask to png files
+        # for j in range(len(outputs)):
+        #     output = outputs[j]
+        #     output = (output > 0.5).float()
+        #     output = output.to("cpu").numpy()
+        #     output = np.uint8(output * 255)
+        #     output = Image.fromarray(output[0], mode="L")
+        #     output.save(f"output_segmentation/output_{i * batch_size + j}.png") 
+
         # Calculate the pixel accuracy
-        # predicted_labels = outputs.argmax(1)
-        # print(predicted_labels.shape)
-        # print(masks.shape)
-        correct_pixels += (outputs == masks).sum().item()
-        total_pixels += masks.numel()
+        # correct_pixels += ((outputs > 0.5) == masks).sum().item()
+        # total_pixels += masks.numel()
 
     # Compute the pixel accuracy
-    pixel_accuracy = correct_pixels / total_pixels
+    # pixel_accuracy = correct_pixels / total_pixels
+    pixel_accuracy = correct_white_pixels / total_white_pixels
 
     # Add the pixel accuracy to the TensorBoard writer
     writer.add_scalar("Pixel_Accuracy/val", pixel_accuracy, epoch)
