@@ -7,8 +7,6 @@ from torchvision.datasets import ImageFolder
 from torchvision.models.segmentation import deeplabv3_resnet101
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-import numpy as np
-from PIL import Image
 
 class DiceLoss(nn.Module):
     def __init__(self):
@@ -74,12 +72,18 @@ model = deeplabv3_resnet101(weights="DeepLabV3_ResNet101_Weights.DEFAULT")
 
 # Replace the classifier with a new one
 model.classifier = nn.Sequential(
-    nn.Conv2d(2048, 256, kernel_size=3, stride=1, padding=1, bias=False),
-    nn.BatchNorm2d(256),
-    nn.ReLU(),
-    nn.Conv2d(256, 1, kernel_size=1, stride=1),
-    nn.Sigmoid()
-)
+            nn.Conv2d(2048, 512, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.Conv2d(128, 1, kernel_size=1, stride=1),
+            nn.Sigmoid()
+        )
 
 # Define the loss function
 criterion = DiceLoss()
