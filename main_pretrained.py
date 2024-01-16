@@ -47,7 +47,7 @@ dataset = MyDataset(root_dir="new_dataset", transform=transform)
 data_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
 # Define the loss function and optimizers
-criterion = nn.BCELoss()
+criterion = nn.CrossEntropyLoss()
 optimizer_G = torch.optim.Adam(G.parameters(), lr=LEARNING_RATE, betas=BETAS)
 optimizer_D = torch.optim.Adam(D.parameters(), lr=LEARNING_RATE, betas=BETAS)
 

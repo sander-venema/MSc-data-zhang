@@ -31,7 +31,7 @@ images_path = f"{dataset_path}/images"
 masks_path = f"{dataset_path}/labels"
 
 # Define the batch size
-batch_size = 4
+batch_size = 8
 
 # Define the number of epochs
 num_epochs = 100
@@ -85,10 +85,10 @@ model.classifier = nn.Sequential(
 criterion = DiceLoss()
 
 # Define the optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
 # Define the scheduler
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+# scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 
 # Move the model to the device
 model.to(device)
