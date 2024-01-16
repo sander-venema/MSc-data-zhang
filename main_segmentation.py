@@ -10,6 +10,19 @@ from tqdm import tqdm
 import numpy as np
 from PIL import Image
 
+class DiceLoss(nn.Module):
+    def __init__(self):
+        super(DiceLoss, self).__init__()
+
+    def forward(self, outputs, targets):
+        smooth = 1e-5
+
+        intersection = (outputs * targets).sum()
+        union = outputs.sum() + targets.sum()
+
+        dice_coefficient = (2. * intersection + smooth) / (union + smooth)
+        return 1. - dice_coefficient
+
 # Define the path to the dataset
 dataset_path = "new_dataset"
 
@@ -69,7 +82,7 @@ model.classifier = nn.Sequential(
 )
 
 # Define the loss function
-criterion = nn.BCELoss()
+criterion = DiceLoss()
 
 # Define the optimizer
 optimizer = optim.Adam(model.parameters(), lr=0.001)
