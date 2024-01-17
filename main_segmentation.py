@@ -221,8 +221,8 @@ for epoch in tqdm(range(num_epochs)):
     writer.add_scalar("Pixel_Accuracy/val", pixel_accuracy, epoch)
 
     # Get IoU score
-    iou_score = iou_running / len(val_loader)
-    writer.add_scalar("IoU/val", iou_score, epoch)
+    iou_val = iou_running / len(val_loader)
+    writer.add_scalar("IoU/val", iou_val, epoch)
 
     # Print the epoch number, loss, and accuracy
     print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_loss:.4f}, Pixel Accuracy: {pixel_accuracy:.4f}")
