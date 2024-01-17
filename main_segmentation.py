@@ -103,20 +103,20 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 model = deeplabv3_resnet101(weights="DeepLabV3_ResNet101_Weights.DEFAULT")
 
 # Replace the classifier with a new one
-# model.classifier = nn.Sequential(
-#             nn.Conv2d(2048, 512, kernel_size=3, stride=1, padding=1, bias=False),
-#             nn.BatchNorm2d(512),
-#             nn.ReLU(),
-#             nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
-#             nn.BatchNorm2d(256),
-#             nn.ReLU(),
-#             nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
-#             nn.BatchNorm2d(128),
-#             nn.ReLU(),
-#             nn.Conv2d(128, 1, kernel_size=1, stride=1),
-#             nn.Sigmoid()
-#         )
-model.classifier = DeepLabHead(2048, 1)
+model.classifier = nn.Sequential(
+            nn.Conv2d(2048, 512, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.Conv2d(128, 1, kernel_size=1, stride=1),
+            nn.Sigmoid()
+        )
+# model.classifier = DeepLabHead(2048, 1)
 
 # Define the loss function
 criterion = BCEDiceLoss()
