@@ -23,6 +23,14 @@ def DiceCoefficient(outputs, targets):
     dice = (2. * intersection + 1e-5) / (outputs.sum() + targets.sum() + 1e-5)
     return dice
 
+def PixelAccuracy(outputs, targets):
+    outputs = outputs.view(-1)
+    targets = targets.view(-1)
+
+    correct = (outputs == targets).sum()
+    total = outputs.size(0) * outputs.size(1) * outputs.size(2) * outputs.size(3)
+    return correct / total
+
 # Define the path to the dataset
 dataset_path = "new_dataset"
 
@@ -161,7 +169,7 @@ for epoch in tqdm(range(num_epochs)):
             output = outputs[j]
             output = (output > 0.5).float()
             dice_running += DiceCoefficient(output, masks[j])
-            pixel_accuracy_running += (output == masks[j]).float()
+            pixel_accuracy_running += PixelAccuracy(output, masks[j])
 
         if i%10 == 0:
             print(f"Validation Batch {i + 1}/{len(val_loader)}")
