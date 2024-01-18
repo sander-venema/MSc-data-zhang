@@ -5,14 +5,12 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from PIL import Image
 
-from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, iou_pytorch
+from utils.losses import BCEDiceLoss, IoULoss, DiceLoss
 
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
 from torchvision.models.segmentation import deeplabv3_resnet101
 from torchvision.models.segmentation.deeplabv3 import DeepLabHead
-
-from torchmetrics.detection import IntersectionOverUnion
 
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -91,7 +89,6 @@ model.classifier = nn.Sequential(
 
 # Define the loss function
 criterion = BCEDiceLoss()
-metric = IntersectionOverUnion()
 
 # Define the optimizer
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
@@ -147,6 +144,7 @@ for epoch in tqdm(range(num_epochs)):
 
     # Initialize the running accuracy
     dice_running = 0.0
+    iou_running = 0.0
 
     # Iterate over the validation data
     for i, (images, masks) in enumerate(val_loader):
@@ -161,8 +159,11 @@ for epoch in tqdm(range(num_epochs)):
             output = outputs[j]
             output = (output > 0.5).float()
             dice_running += DiceCoefficient(output, masks[j])
-            IoU = IntersectionOverUnion(output, masks[j])
-       
+
+            intersection = (output * masks[j]).sum()
+            union = (output | masks[j]).sum()
+            iou_running += (intersection + 1e-5) / (union + 1e-5)
+
         if i%10 == 0:
             print(f"Validation Batch {i + 1}/{len(val_loader)}")
 
@@ -183,10 +184,9 @@ for epoch in tqdm(range(num_epochs)):
             
     # Compute average Dice Coefficient
     dice_val = dice_running / len(val_loader)
+    iou_val = iou_running / len(val_loader)
     writer.add_scalar("Dice_Coefficient/val", dice_val, epoch)
-
-    IoU = metric.compute()
-    writer.add_scalar("IoU/val", IoU, epoch)    
+    writer.add_scalar("IoU/val", iou_val, epoch)
 
     # Print the epoch number, loss, and accuracy
     print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_loss:.4f}, Dice: {dice_val:.4f}, IoU: {IoU:.4f}")
