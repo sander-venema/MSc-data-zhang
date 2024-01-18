@@ -91,7 +91,7 @@ model.classifier = nn.Sequential(
 criterion = BCEDiceLoss()
 
 # Define the optimizer
-optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+optimizer = optim.SGD(model.parameters(), lr=0.0005, momentum=0.9)
 
 # Move the model to the device
 model.to(device)
@@ -144,7 +144,7 @@ for epoch in tqdm(range(num_epochs)):
 
     # Initialize the running accuracy
     dice_running = 0.0
-    iou_running = 0.0
+    pixel_accuracy_running = 0.0
 
     # Iterate over the validation data
     for i, (images, masks) in enumerate(val_loader):
@@ -159,10 +159,7 @@ for epoch in tqdm(range(num_epochs)):
             output = outputs[j]
             output = (output > 0.5).float()
             dice_running += DiceCoefficient(output, masks[j])
-
-            intersection = (output * masks[j]).sum()
-            union = (output.to("cpu") | masks[j].to("cpu")).sum()
-            iou_running += (intersection + 1e-5) / (union + 1e-5)
+            pixel_accuracy_running += (output == masks[j]).float()
 
         if i%10 == 0:
             print(f"Validation Batch {i + 1}/{len(val_loader)}")
@@ -176,17 +173,12 @@ for epoch in tqdm(range(num_epochs)):
             output = Image.fromarray(output[0], mode="L")
             output.save(f"output_segmentation/output_{i * batch_size + j}.png") 
 
-    # Compute the pixel accuracy
-    # pixel_accuracy = correct_white_pixels / total_white_pixels
-
-    # Add the pixel accuracy to the TensorBoard writer
-    # writer.add_scalar("Pixel_Accuracy/val", pixel_accuracy, epoch)
+    pixel_accuracy = pixel_accuracy_running / (len(val_loader) * batch_size)
+    writer.add_scalar("Pixel_Accuracy/val", pixel_accuracy, epoch)
             
     # Compute average Dice Coefficient
     dice_val = dice_running / len(val_loader)
-    iou_val = iou_running / len(val_loader)
     writer.add_scalar("Dice_Coefficient/val", dice_val, epoch)
-    writer.add_scalar("IoU/val", iou_val, epoch)
 
     # Print the epoch number, loss, and accuracy
-    print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_loss:.4f}, Dice: {dice_val:.4f}, IoU: {IoU:.4f}")
+    print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_loss:.4f}, Dice: {dice_val:.4f}")
