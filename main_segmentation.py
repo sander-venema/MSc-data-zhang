@@ -91,7 +91,7 @@ model.classifier = nn.Sequential(
 
 # Define the loss function
 criterion = BCEDiceLoss()
-metric = IntersectionOverUnion(num_classes=2)
+metric = IntersectionOverUnion()
 
 # Define the optimizer
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
