@@ -12,6 +12,8 @@ from torchvision.datasets import ImageFolder
 from torchvision.models.segmentation import deeplabv3_resnet101
 from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 
+from sklearn.metrics import jaccard_score
+
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -30,6 +32,13 @@ def PixelAccuracy(outputs, targets):
     correct = (outputs == targets).sum()
     total = outputs.size(0)
     return correct / total
+
+def mIoU(outputs, targets):
+    outputs = outputs.view(-1)
+    targets = targets.view(-1)
+
+    IoU = jaccard_score(targets, outputs)
+    return IoU
 
 # Define the path to the dataset
 dataset_path = "new_dataset"
@@ -99,7 +108,7 @@ model.classifier = nn.Sequential(
 criterion = BCEDiceLoss()
 
 # Define the optimizer
-optimizer = optim.SGD(model.parameters(), lr=0.0005, momentum=0.9)
+optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
 # Move the model to the device
 model.to(device)
@@ -153,6 +162,7 @@ for epoch in tqdm(range(num_epochs)):
     # Initialize the running accuracy
     dice_running = 0.0
     pixel_accuracy_running = 0.0
+    iou_running = 0.0
     length = 0
 
     # Iterate over the validation data
@@ -170,6 +180,7 @@ for epoch in tqdm(range(num_epochs)):
             output = (output > 0.5).float()
             dice_running += DiceCoefficient(output, masks[j])
             pixel_accuracy_running += PixelAccuracy(output, masks[j])
+            iou_running += mIoU(output, masks[j])
 
         if i%10 == 0:
             print(f"Validation Batch {i + 1}/{len(val_loader)}")
@@ -185,11 +196,15 @@ for epoch in tqdm(range(num_epochs)):
 
     pixel_accuracy = pixel_accuracy_running / length
     print(pixel_accuracy)
-    writer.add_scalar("Pixel_Accuracy/val", pixel_accuracy, epoch)
+    writer.add_scalar("Metrics/Pixel_acc", pixel_accuracy, epoch)
             
     # Compute average Dice Coefficient
     dice_val = dice_running / length
-    writer.add_scalar("Dice_Coefficient/val", dice_val, epoch)
+    writer.add_scalar("Metrics/Dice", dice_val, epoch)
+
+    # Compute average IoU
+    iou_val = iou_running / length
+    writer.add_scalar("Metrics/IoU", iou_val, epoch)
 
     # Print the epoch number, loss, and accuracy
     print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_loss:.4f}, Dice: {dice_val:.4f}")
