@@ -14,6 +14,14 @@ from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+def DiceCoefficient(outputs, targets):
+    outputs = outputs.view(-1)
+    targets = targets.view(-1)
+
+    intersection = (outputs * targets).sum()
+    dice = (2. * intersection + 1e-5) / (outputs.sum() + targets.sum() + 1e-5)
+    return dice
+
 # Define the path to the dataset
 dataset_path = "new_dataset"
 
@@ -79,7 +87,7 @@ model.classifier = nn.Sequential(
         )
 
 # Define the loss function
-criterion = IoULoss()
+criterion = DiceLoss()
 
 # Define the optimizer
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
@@ -134,9 +142,10 @@ for epoch in tqdm(range(num_epochs)):
     model.eval()
 
     # Initialize the running accuracy
-    total_white_pixels = 0
-    correct_white_pixels = 0
-    iou_running = 0.0
+    # total_white_pixels = 0
+    # correct_white_pixels = 0
+    # iou_running = 0.0
+    dice_running = 0.0
 
     # Iterate over the validation data
     for i, (images, masks) in enumerate(val_loader):
@@ -152,11 +161,14 @@ for epoch in tqdm(range(num_epochs)):
         for j in range(len(outputs)):
             output = outputs[j]
             output_binary = (output > 0.5).float()
-            correct_white_pixels += (output_binary == masks).logical_and(masks == 1).sum().item()
-            total_white_pixels += masks.eq(1).sum().item()
+            dice_running += DiceCoefficient(output_binary, masks)
+            # correct_white_pixels += (output_binary == masks).logical_and(masks == 1).sum().item()
+            # total_white_pixels += masks.eq(1).sum().item()
        
         if i%10 == 0:
-            print(f"Validation Batch {i + 1}/{len(val_loader)} Accuracy: {correct_white_pixels / total_white_pixels:.4f}")
+            print
+            # print(f"Validation Batch {i + 1}/{len(val_loader)} Accuracy: {correct_white_pixels / total_white_pixels:.4f}")
+            print(f"Validation Batch {i + 1}/{len(val_loader)} Dice Coefficient: {dice_running / len(outputs):.4f}")
 
         # Save the predicted mask to png files
         for j in range(len(outputs)):
@@ -168,14 +180,19 @@ for epoch in tqdm(range(num_epochs)):
             output.save(f"output_segmentation/output_{i * batch_size + j}.png") 
 
     # Compute the pixel accuracy
-    pixel_accuracy = correct_white_pixels / total_white_pixels
+    # pixel_accuracy = correct_white_pixels / total_white_pixels
 
     # Add the pixel accuracy to the TensorBoard writer
-    writer.add_scalar("Pixel_Accuracy/val", pixel_accuracy, epoch)
+    # writer.add_scalar("Pixel_Accuracy/val", pixel_accuracy, epoch)
+            
+    # Compute average Dice Coefficient
+    dice_val = dice_running / len(val_loader)
+    writer.add_scalar("Dice_Coefficient/val", dice_val, epoch)
+    
 
     # Get IoU score
     #iou_val = iou_running / len(val_loader)
     #writer.add_scalar("IoU/val", iou_val, epoch)
 
     # Print the epoch number, loss, and accuracy
-    print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_loss:.4f}, Pixel Accuracy: {pixel_accuracy:.4f}")
+    print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_loss:.4f}, Dice: {dice_val:.4f}")
