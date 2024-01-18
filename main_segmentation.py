@@ -161,7 +161,7 @@ for epoch in tqdm(range(num_epochs)):
             dice_running += DiceCoefficient(output, masks[j])
 
             intersection = (output * masks[j]).sum()
-            union = (output | masks[j]).sum()
+            union = (output.to("cpu") | masks[j].to("cpu")).sum()
             iou_running += (intersection + 1e-5) / (union + 1e-5)
 
         if i%10 == 0:
