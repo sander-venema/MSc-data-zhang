@@ -156,16 +156,15 @@ for epoch in tqdm(range(num_epochs)):
 
         # Forward pass
         outputs = model(images)["out"]
-        
-        IoU = metric(outputs, masks)
 
         for j in range(len(outputs)):
             output = outputs[j]
             output = (output > 0.5).float()
             dice_running += DiceCoefficient(output, masks[j])
+            IoU = IntersectionOverUnion(output, masks[j])
        
         if i%10 == 0:
-            print(f"Validation Batch {i + 1}/{len(val_loader)} IoU: {IoU:.4f}")
+            print(f"Validation Batch {i + 1}/{len(val_loader)}")
 
         # Save the predicted mask to png files
         for j in range(len(outputs)):
