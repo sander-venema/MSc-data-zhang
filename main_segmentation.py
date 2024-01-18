@@ -176,10 +176,11 @@ for epoch in tqdm(range(num_epochs)):
             output.save(f"output_segmentation/output_{i * batch_size + j}.png") 
 
     pixel_accuracy = pixel_accuracy_running / length
+    print(pixel_accuracy)
     writer.add_scalar("Pixel_Accuracy/val", pixel_accuracy, epoch)
             
     # Compute average Dice Coefficient
-    dice_val = dice_running / len(val_loader)
+    dice_val = dice_running / length
     writer.add_scalar("Dice_Coefficient/val", dice_val, epoch)
 
     # Print the epoch number, loss, and accuracy
