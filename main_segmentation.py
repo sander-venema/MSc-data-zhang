@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from torchmetrics.detection import IntersectionOverUnion
 
-from utils.losses import BCEDiceLoss, iou_score, DiceLoss
+from utils.losses import BCEDiceLoss, IoULoss, DiceLoss
 
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
@@ -75,16 +76,13 @@ model.classifier = nn.Sequential(
             nn.Conv2d(128, 1, kernel_size=1, stride=1),
             nn.Sigmoid()
         )
-# model.classifier = DeepLabHead(2048, 1)
 
 # Define the loss function
 criterion = BCEDiceLoss()
+metric = IntersectionOverUnion()
 
 # Define the optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.0001)
-
-# Define the scheduler
-# scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
 # Move the model to the device
 model.to(device)
@@ -148,7 +146,8 @@ for epoch in tqdm(range(num_epochs)):
 
         # Forward pass
         outputs = model(images)["out"]
-        iou_running += iou_score(outputs, masks)
+        
+        iou_running += metric(outputs, masks).item()
 
         for j in range(len(outputs)):
             output = outputs[j]

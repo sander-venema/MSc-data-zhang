@@ -7,13 +7,13 @@ class DiceLoss(nn.Module):
         super(DiceLoss, self).__init__()
 
     def forward(self, outputs, targets):
-        smooth = 1e-5
+
+        outputs = outputs.view(-1)
+        targets = targets.view(-1)
 
         intersection = (outputs * targets).sum()
-        union = outputs.sum() + targets.sum()
-
-        dice_coefficient = (2. * intersection + smooth) / (union + smooth)
-        return 1. - dice_coefficient
+        dice = (2. * intersection + 1e-5) / (outputs.sum() + targets.sum() + 1e-5)
+        return 1 - dice
 
 class BCEDiceLoss(nn.Module):
     def __init__(self):
@@ -22,7 +22,6 @@ class BCEDiceLoss(nn.Module):
     def forward(self, input, target):
         bce = F.binary_cross_entropy_with_logits(input, target)
         smooth = 1e-5
-        input = torch.sigmoid(input)
         num = target.size(0)
         input = input.view(num, -1)
         target = target.view(num, -1)
@@ -31,16 +30,16 @@ class BCEDiceLoss(nn.Module):
         dice = 1 - dice.sum() / num
         return 0.5 * bce + dice
 
-def iou_score(output, target):
-    smooth = 1e-5
+class IoULoss(nn.Module):
+    def __init__(self):
+        super(IoULoss, self).__init__()
 
-    if torch.is_tensor(output):
-        output = torch.sigmoid(output).data.cpu().numpy()
-    if torch.is_tensor(target):
-        target = target.data.cpu().numpy()
-    output_ = output > 0.5
-    target_ = target > 0.5
-    intersection = (output_ & target_).sum()
-    union = (output_ | target_).sum()
-    iou = (intersection + smooth) / (union + smooth)
-    return iou
+    def forward(self, outputs, targets):
+        outputs = outputs.view(-1)
+        targets = targets.view(-1)
+
+        intersection = (outputs * targets).sum()
+        total = (outputs + targets).sum()
+        union = total - intersection
+
+        IoU = (intersection + 1e-5) / (union + 1e-5)
