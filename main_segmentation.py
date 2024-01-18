@@ -2,9 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torchmetrics.detection import IntersectionOverUnion
 
-from utils.losses import BCEDiceLoss, IoULoss, DiceLoss
+from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, iou_pytorch
 
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
@@ -79,7 +78,6 @@ model.classifier = nn.Sequential(
 
 # Define the loss function
 criterion = BCEDiceLoss()
-metric = IntersectionOverUnion()
 
 # Define the optimizer
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
@@ -147,7 +145,7 @@ for epoch in tqdm(range(num_epochs)):
         # Forward pass
         outputs = model(images)["out"]
         
-        iou_running += metric(outputs, masks).item()
+        iou_running += iou_pytorch(outputs, masks)
 
         for j in range(len(outputs)):
             output = outputs[j]

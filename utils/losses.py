@@ -43,3 +43,15 @@ class IoULoss(nn.Module):
         union = total - intersection
 
         IoU = (intersection + 1e-5) / (union + 1e-5)
+
+def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor):
+    outputs = outputs.squeeze(1)
+
+    intersection = (outputs & labels).float().sum((1, 2))
+    union = (outputs | labels).float().sum((1, 2))
+
+    iou = (intersection + 1e-5) / (union + 1e-5)
+
+    thresholded = torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10
+
+    return thresholded
