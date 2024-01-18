@@ -43,6 +43,7 @@ class IoULoss(nn.Module):
         union = total - intersection
 
         IoU = (intersection + 1e-5) / (union + 1e-5)
+        return 1 - IoU
 
 def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor):
     outputs = outputs.squeeze(1)

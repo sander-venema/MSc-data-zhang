@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
+import numpy as np
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from PIL import Image
 
 from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, iou_pytorch
 
@@ -77,7 +79,7 @@ model.classifier = nn.Sequential(
         )
 
 # Define the loss function
-criterion = BCEDiceLoss()
+criterion = IoULoss()
 
 # Define the optimizer
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
@@ -145,7 +147,7 @@ for epoch in tqdm(range(num_epochs)):
         # Forward pass
         outputs = model(images)["out"]
         
-        iou_running += iou_pytorch(outputs, masks)
+        # iou_running += iou_pytorch(outputs, masks)
 
         for j in range(len(outputs)):
             output = outputs[j]
@@ -156,29 +158,24 @@ for epoch in tqdm(range(num_epochs)):
         if i%10 == 0:
             print(f"Validation Batch {i + 1}/{len(val_loader)} Accuracy: {correct_white_pixels / total_white_pixels:.4f}")
 
-        # # Save the predicted mask to png files
-        # for j in range(len(outputs)):
-        #     output = outputs[j]
-        #     output = (output > 0.5).float()
-        #     output = output.to("cpu").numpy()
-        #     output = np.uint8(output * 255)
-        #     output = Image.fromarray(output[0], mode="L")
-        #     output.save(f"output_segmentation/output_{i * batch_size + j}.png") 
-
-        # Calculate the pixel accuracy
-        # correct_pixels += ((outputs > 0.5) == masks).sum().item()
-        # total_pixels += masks.numel()
+        # Save the predicted mask to png files
+        for j in range(len(outputs)):
+            output = outputs[j]
+            output = (output > 0.5).float()
+            output = output.to("cpu").numpy()
+            output = np.uint8(output * 255)
+            output = Image.fromarray(output[0], mode="L")
+            output.save(f"output_segmentation/output_{i * batch_size + j}.png") 
 
     # Compute the pixel accuracy
-    # pixel_accuracy = correct_pixels / total_pixels
     pixel_accuracy = correct_white_pixels / total_white_pixels
 
     # Add the pixel accuracy to the TensorBoard writer
     writer.add_scalar("Pixel_Accuracy/val", pixel_accuracy, epoch)
 
     # Get IoU score
-    iou_val = iou_running / len(val_loader)
-    writer.add_scalar("IoU/val", iou_val, epoch)
+    #iou_val = iou_running / len(val_loader)
+    #writer.add_scalar("IoU/val", iou_val, epoch)
 
     # Print the epoch number, loss, and accuracy
     print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_loss:.4f}, Pixel Accuracy: {pixel_accuracy:.4f}")
