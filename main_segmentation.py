@@ -28,7 +28,7 @@ def PixelAccuracy(outputs, targets):
     targets = targets.view(-1)
 
     correct = (outputs == targets).sum()
-    total = outputs.size(0) * outputs.size(1) * outputs.size(2) * outputs.size(3)
+    total = outputs.size(0)
     return correct / total
 
 # Define the path to the dataset
