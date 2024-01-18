@@ -160,8 +160,8 @@ for epoch in tqdm(range(num_epochs)):
 
         for j in range(len(outputs)):
             output = outputs[j]
-            output_binary = (output > 0.5).float()
-            dice_running += DiceCoefficient(output_binary, masks)
+            output = (output > 0.5).float()
+            dice_running += DiceCoefficient(output, masks[j])
             # correct_white_pixels += (output_binary == masks).logical_and(masks == 1).sum().item()
             # total_white_pixels += masks.eq(1).sum().item()
        
