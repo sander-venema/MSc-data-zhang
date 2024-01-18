@@ -34,8 +34,8 @@ def PixelAccuracy(outputs, targets):
     return correct / total
 
 def mIoU(outputs, targets):
-    outputs = outputs.view(-1)
-    targets = targets.view(-1)
+    outputs = outputs.view(-1).to("cpu").numpy()
+    targets = targets.view(-1).to("cpu").numpy()
 
     IoU = jaccard_score(targets, outputs)
     return IoU
