@@ -11,6 +11,9 @@ from torchvision import transforms
 from torchvision.datasets import ImageFolder
 from torchvision.models.segmentation import deeplabv3_resnet101
 from torchvision.models.segmentation.deeplabv3 import DeepLabHead
+
+from torchmetrics.detection import IntersectionOverUnion
+
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -88,6 +91,7 @@ model.classifier = nn.Sequential(
 
 # Define the loss function
 criterion = BCEDiceLoss()
+metric = IntersectionOverUnion(num_classes=2)
 
 # Define the optimizer
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
@@ -142,9 +146,6 @@ for epoch in tqdm(range(num_epochs)):
     model.eval()
 
     # Initialize the running accuracy
-    # total_white_pixels = 0
-    # correct_white_pixels = 0
-    # iou_running = 0.0
     dice_running = 0.0
 
     # Iterate over the validation data
@@ -156,19 +157,15 @@ for epoch in tqdm(range(num_epochs)):
         # Forward pass
         outputs = model(images)["out"]
         
-        # iou_running += iou_pytorch(outputs, masks)
+        IoU = metric(outputs, masks)
 
         for j in range(len(outputs)):
             output = outputs[j]
             output = (output > 0.5).float()
             dice_running += DiceCoefficient(output, masks[j])
-            # correct_white_pixels += (output_binary == masks).logical_and(masks == 1).sum().item()
-            # total_white_pixels += masks.eq(1).sum().item()
        
         if i%10 == 0:
-            print
-            # print(f"Validation Batch {i + 1}/{len(val_loader)} Accuracy: {correct_white_pixels / total_white_pixels:.4f}")
-            print(f"Validation Batch {i + 1}/{len(val_loader)} Dice Coefficient: {dice_running / len(outputs):.4f}")
+            print(f"Validation Batch {i + 1}/{len(val_loader)} IoU: {IoU:.4f}")
 
         # Save the predicted mask to png files
         for j in range(len(outputs)):
@@ -188,11 +185,9 @@ for epoch in tqdm(range(num_epochs)):
     # Compute average Dice Coefficient
     dice_val = dice_running / len(val_loader)
     writer.add_scalar("Dice_Coefficient/val", dice_val, epoch)
-    
 
-    # Get IoU score
-    #iou_val = iou_running / len(val_loader)
-    #writer.add_scalar("IoU/val", iou_val, epoch)
+    IoU = metric.compute()
+    writer.add_scalar("IoU/val", IoU, epoch)    
 
     # Print the epoch number, loss, and accuracy
-    print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_loss:.4f}, Dice: {dice_val:.4f}")
+    print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_loss:.4f}, Dice: {dice_val:.4f}, IoU: {IoU:.4f}")
