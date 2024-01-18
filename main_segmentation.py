@@ -145,6 +145,7 @@ for epoch in tqdm(range(num_epochs)):
     # Initialize the running accuracy
     dice_running = 0.0
     pixel_accuracy_running = 0.0
+    length = 0
 
     # Iterate over the validation data
     for i, (images, masks) in enumerate(val_loader):
@@ -156,6 +157,7 @@ for epoch in tqdm(range(num_epochs)):
         outputs = model(images)["out"]
 
         for j in range(len(outputs)):
+            length += 1
             output = outputs[j]
             output = (output > 0.5).float()
             dice_running += DiceCoefficient(output, masks[j])
@@ -173,7 +175,7 @@ for epoch in tqdm(range(num_epochs)):
             output = Image.fromarray(output[0], mode="L")
             output.save(f"output_segmentation/output_{i * batch_size + j}.png") 
 
-    pixel_accuracy = pixel_accuracy_running / (len(val_loader) * batch_size)
+    pixel_accuracy = pixel_accuracy_running / length
     writer.add_scalar("Pixel_Accuracy/val", pixel_accuracy, epoch)
             
     # Compute average Dice Coefficient
