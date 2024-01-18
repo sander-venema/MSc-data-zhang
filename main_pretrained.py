@@ -6,7 +6,7 @@ from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import save_image
 
-from model_new import Generator, Discriminator
+from models.model_old_gan import Generator, Discriminator
 
 # Define constants
 IMAGE_SIZE = 256

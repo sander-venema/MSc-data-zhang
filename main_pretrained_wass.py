@@ -7,7 +7,7 @@ from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import save_image
 
-from model_wass import Generator, Discriminator
+from models.model_wass import Generator, Discriminator
 
 from tqdm import tqdm
 

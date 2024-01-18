@@ -1,57 +1,16 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
+
+from utils.losses import BCEDiceLoss, iou_score, DiceLoss
+
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
 from torchvision.models.segmentation import deeplabv3_resnet101
 from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-
-class DiceLoss(nn.Module):
-    def __init__(self):
-        super(DiceLoss, self).__init__()
-
-    def forward(self, outputs, targets):
-        smooth = 1e-5
-
-        intersection = (outputs * targets).sum()
-        union = outputs.sum() + targets.sum()
-
-        dice_coefficient = (2. * intersection + smooth) / (union + smooth)
-        return 1. - dice_coefficient
-
-class BCEDiceLoss(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, input, target):
-        bce = F.binary_cross_entropy_with_logits(input, target)
-        smooth = 1e-5
-        input = torch.sigmoid(input)
-        num = target.size(0)
-        input = input.view(num, -1)
-        target = target.view(num, -1)
-        intersection = (input * target)
-        dice = (2. * intersection.sum(1) + smooth) / (input.sum(1) + target.sum(1) + smooth)
-        dice = 1 - dice.sum() / num
-        return 0.5 * bce + dice
-
-def iou_score(output, target):
-    smooth = 1e-5
-
-    if torch.is_tensor(output):
-        output = torch.sigmoid(output).data.cpu().numpy()
-    if torch.is_tensor(target):
-        target = target.data.cpu().numpy()
-    output_ = output > 0.5
-    target_ = target > 0.5
-    intersection = (output_ & target_).sum()
-    union = (output_ | target_).sum()
-    iou = (intersection + smooth) / (union + smooth)
-    return iou
 
 # Define the path to the dataset
 dataset_path = "new_dataset"
@@ -103,20 +62,20 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 model = deeplabv3_resnet101(weights="DeepLabV3_ResNet101_Weights.DEFAULT")
 
 # Replace the classifier with a new one
-model.classifier = nn.Sequential(
-            nn.Conv2d(2048, 512, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-            nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-            nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.Conv2d(128, 1, kernel_size=1, stride=1),
-            nn.Sigmoid()
-        )
-# model.classifier = DeepLabHead(2048, 1)
+# model.classifier = nn.Sequential(
+#             nn.Conv2d(2048, 512, kernel_size=3, stride=1, padding=1, bias=False),
+#             nn.BatchNorm2d(512),
+#             nn.ReLU(),
+#             nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
+#             nn.BatchNorm2d(256),
+#             nn.ReLU(),
+#             nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
+#             nn.BatchNorm2d(128),
+#             nn.ReLU(),
+#             nn.Conv2d(128, 1, kernel_size=1, stride=1),
+#             nn.Sigmoid()
+#         )
+model.classifier = DeepLabHead(2048, 1)
 
 # Define the loss function
 criterion = BCEDiceLoss()
