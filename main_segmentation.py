@@ -87,7 +87,7 @@ model.classifier = nn.Sequential(
         )
 
 # Define the loss function
-criterion = DiceLoss()
+criterion = BCEDiceLoss()
 
 # Define the optimizer
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
