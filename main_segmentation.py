@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 from PIL import Image
 
-from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, FocalLoss
+from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, ComboLoss
 from utils.metrics import DiceCoefficient, PixelAccuracy, mIoU
 from utils.data_stuff import SegmentationDataset, image_transforms, mask_transforms
 
@@ -55,7 +55,7 @@ model.classifier = nn.Sequential(
         )
 
 # Define the loss function
-criterion = FocalLoss()
+criterion = ComboLoss()
 
 # Define the optimizer
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
