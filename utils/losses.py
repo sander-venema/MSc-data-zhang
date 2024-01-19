@@ -31,10 +31,8 @@ class BCEDiceLoss(nn.Module):
         return 0.5 * bce + dice
 
 class BCEDiceFocalLoss(nn.Module):
-    def __init__(self, gamma=2, alpha=1):
+    def __init__(self):
         super().__init__()
-        self.gamma = gamma
-        self.alpha = alpha
 
     def forward(self, input, target):
         bce = F.binary_cross_entropy_with_logits(input, target)
@@ -45,8 +43,9 @@ class BCEDiceFocalLoss(nn.Module):
         intersection = (input * target)
         dice = (2. * intersection.sum(1) + smooth) / (input.sum(1) + target.sum(1) + smooth)
         dice = 1 - dice.sum() / num
-        focal = self.alpha * (1 - dice) ** self.gamma * bce
-        return focal
+        focal = (target * torch.log(input + smooth) + (1 - target) * torch.log(1 - input + smooth)) * (1 - input) ** 2
+        focal = focal.sum() / num
+        return 0.5 * bce + 0.5 * dice + focal
 
 class IoULoss(nn.Module):
     def __init__(self):
