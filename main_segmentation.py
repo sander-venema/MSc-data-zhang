@@ -1,51 +1,21 @@
+import os
 import torch
 import torch.nn as nn
 import numpy as np
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
 from PIL import Image
 
 from utils.losses import BCEDiceLoss, IoULoss, DiceLoss
+from utils.metrics import DiceCoefficient, PixelAccuracy, mIoU
+from utils.data_stuff import SegmentationDataset, image_transforms, mask_transforms
 
 from torchvision import transforms
-from torchvision.datasets import ImageFolder
 from torchvision.models.segmentation import deeplabv3_resnet101
-from torchvision.models.segmentation.deeplabv3 import DeepLabHead
-
-from sklearn.metrics import jaccard_score
 
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-
-def DiceCoefficient(outputs, targets):
-    outputs = outputs.view(-1)
-    targets = targets.view(-1)
-
-    intersection = (outputs * targets).sum()
-    dice = (2. * intersection + 1e-5) / (outputs.sum() + targets.sum() + 1e-5)
-    return dice
-
-def PixelAccuracy(outputs, targets):
-    outputs = outputs.view(-1)
-    targets = targets.view(-1)
-
-    correct = (outputs == targets).sum()
-    total = outputs.size(0)
-    return correct / total
-
-def mIoU(outputs, targets):
-    outputs = outputs.view(-1).to("cpu").numpy()
-    targets = targets.view(-1).to("cpu").numpy()
-
-    IoU = jaccard_score(targets, outputs)
-    return IoU
-
-# Define the path to the dataset
-dataset_path = "new_dataset"
-
-# Define the path to the images and masks
-images_path = f"{dataset_path}/images"
-masks_path = f"{dataset_path}/labels"
 
 # Define the batch size
 batch_size = 8
@@ -56,28 +26,8 @@ num_epochs = 100
 # Define the device to use for training
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Define the transforms to apply to the images and masks
-image_transforms = transforms.Compose([
-    transforms.Resize((369, 369)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
-
-mask_transforms = transforms.Compose([
-    transforms.Resize((369, 369)),
-    transforms.Grayscale(num_output_channels=1),
-    transforms.ToTensor(),
-    transforms.Lambda(lambda x: torch.round(x)),
-])
-
 # Load the dataset
-dataset = ImageFolder(images_path, transform=image_transforms)
-
-# Load the masks
-masks = ImageFolder(masks_path, transform=mask_transforms)
-
-# Combine the images and masks into a single dataset
-dataset = [(image, mask) for (image, _), (mask, _) in zip(dataset, masks)]
+dataset = SegmentationDataset('new_dataset/', image_transforms, mask_transforms)
 
 # Split the dataset into training and validation sets
 train_dataset, val_dataset = torch.utils.data.random_split(dataset, [int(0.8 * len(dataset)), len(dataset) - int(0.8 * len(dataset))])
@@ -109,6 +59,7 @@ criterion = BCEDiceLoss()
 
 # Define the optimizer
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=5, verbose=True)
 
 # Move the model to the device
 model.to(device)
