@@ -7,3 +7,4 @@ generated_images/
 saved_models/
 logs_segmentation/
 output_segmentation/
+*.pyc
