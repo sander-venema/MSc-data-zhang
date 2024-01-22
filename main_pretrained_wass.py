@@ -18,8 +18,9 @@ LEARNING_RATE = 0.00005
 BETAS = (0.5, 0.999)
 BATCH_SIZE = 32
 
-# Create directories for saving generated images and model state dictionaries
-os.makedirs("generated_images/wass_{0}_{1}".format(IMAGE_SIZE, LEARNING_RATE), exist_ok=True)
+saving_path = "generated_images/wass_{0}_{1}_1in5gen/".format(IMAGE_SIZE, LEARNING_RATE)
+filename = "wass_{0}_{1}_1in5gen".format(IMAGE_SIZE, LEARNING_RATE)
+os.makedirs(saving_path, exist_ok=True)
 
 # Initialize the new Generator and Discriminator and move them to the GPU
 G = Generator().to("cuda")
@@ -47,7 +48,7 @@ optimizer_G = torch.optim.RMSprop(G.parameters(), lr=LEARNING_RATE)
 optimizer_D = torch.optim.RMSprop(D.parameters(), lr=LEARNING_RATE)
 
 # TensorBoard writer
-writer = SummaryWriter()
+writer = SummaryWriter(f"logs_generation/{filename}")
 
 num_epochs = 500
 latent_dim = 100
@@ -114,7 +115,7 @@ for epoch in tqdm(range(num_epochs)):
 
     # Save generated images at the end of each epoch
     if (epoch + 1) % 10 == 0:
-        save_image(fake_imgs.data[:25], f"generated_images/wass_{IMAGE_SIZE}_{LEARNING_RATE}_1in5gen/epoch_{epoch + 1}.png", nrow=5, normalize=True)
+        save_image(fake_imgs.data[:25], f"{saving_path}/epoch_{epoch + 1}.png", nrow=5, normalize=True)
 
     # Calculate and log discriminator accuracy
     accuracy_real = correct_real / total_real
