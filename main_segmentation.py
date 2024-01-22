@@ -55,7 +55,7 @@ model.classifier = nn.Sequential(
         )
 
 # Define the loss function
-criterion = ComboLoss()
+criterion = IoULoss()
 
 # Define the optimizer
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
