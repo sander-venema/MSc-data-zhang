@@ -5,7 +5,7 @@ from torchvision.datasets import ImageFolder
 from torchvision import transforms
 from torchvision.utils import save_image
 
-from models.model_old_gan import Generator, Discriminator
+from archs.model_old_gan import Generator, Discriminator
 
 # Define a new dataset class
 class MyDataset(Dataset):

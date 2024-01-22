@@ -31,6 +31,24 @@ class SegmentationDataset(Dataset):
 
         return image, mask
     
+class GenerationDataset(Dataset):
+    def __init__(self, root_dir, transform=None):
+        self.root_dir = root_dir
+        self.transform = transform
+        self.image_list = os.listdir(self.root_dir)
+
+    def __len__(self):
+        return len(self.image_list)
+
+    def __getitem__(self, idx):
+        img_name = os.path.join(self.root_dir, self.image_list[idx])
+        image = Image.open(img_name).convert("L")
+
+        if self.transform:
+            image = self.transform(image)
+
+        return image
+    
 image_transforms = transforms.Compose([
     transforms.Resize((369, 369)),
     transforms.ToTensor(),

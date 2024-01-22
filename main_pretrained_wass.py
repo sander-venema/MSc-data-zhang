@@ -7,29 +7,19 @@ from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import save_image
 
-from models.model_wass import Generator, Discriminator
+from archs.model_wass import Generator, Discriminator
+from utils.data_stuff import GenerationDataset
 
 from tqdm import tqdm
 
 # Define constants
 IMAGE_SIZE = 512
-LEARNING_RATE = 0.000075
+LEARNING_RATE = 0.00005
 BETAS = (0.5, 0.999)
 BATCH_SIZE = 32
 
 # Create directories for saving generated images and model state dictionaries
 os.makedirs("generated_images/wass_{0}_{1}".format(IMAGE_SIZE, LEARNING_RATE), exist_ok=True)
-
-# Define a new dataset class
-class MyDataset(Dataset):
-    def __init__(self, root_dir, transform=None):
-        self.data = ImageFolder(root_dir, transform=transform)
-
-    def __len__(self):
-        return len(self.data)
-    
-    def __getitem__(self, idx):
-        return self.data[idx][0]
 
 # Initialize the new Generator and Discriminator and move them to the GPU
 G = Generator().to("cuda")
@@ -43,13 +33,12 @@ D.load_state_dict(torch.load(pretrained_path)["D"], strict=False)
 
 # Define the dataset and data loader
 transform = transforms.Compose([
-    # transforms.Resize(IMAGE_SIZE),
     transforms.ToTensor(),
     transforms.Grayscale(),
     transforms.Normalize((0.5,), (0.5,))
 ])
 
-dataset = MyDataset(root_dir="new_dataset", transform=transform)
+dataset = GenerationDataset(root_dir="new_dataset/images/", transform=transform)
 data_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
 # Define the loss function and optimizers
@@ -110,27 +99,22 @@ for epoch in tqdm(range(num_epochs)):
         #  Train Generator
         # ---------------------
 
-        G.zero_grad()
+        if (i + 1) % 5 == 0: # Train the generator every 5 batches
+            G.zero_grad()
 
-        # Generate fake images
-        z = torch.randn(batch_size, latent_dim).to("cuda")
-        fake_imgs = G(z)
-        fake_outputs = D(fake_imgs)
+            # Generate fake images
+            z = torch.randn(batch_size, latent_dim).to("cuda")
+            fake_imgs = G(z)
+            fake_outputs = D(fake_imgs)
 
-        # Generator loss
-        g_loss = -torch.mean(D(fake_imgs))
-        g_loss.backward()
-        optimizer_G.step()
-
-        # Print progress
-        # if i % 100 == 0:
-        #     print(
-        #         f"[Epoch {epoch}/{num_epochs}] [D loss: {d_loss.item()}] [G loss: {g_loss.item()}]"
-        #     )
+            # Generator loss
+            g_loss = -torch.mean(D(fake_imgs))
+            g_loss.backward()
+            optimizer_G.step()
 
     # Save generated images at the end of each epoch
     if (epoch + 1) % 10 == 0:
-        save_image(fake_imgs.data[:25], f"generated_images/wass_{IMAGE_SIZE}_{LEARNING_RATE}/epoch_{epoch + 1}.png", nrow=5, normalize=True)
+        save_image(fake_imgs.data[:25], f"generated_images/wass_{IMAGE_SIZE}_{LEARNING_RATE}_1in5gen/epoch_{epoch + 1}.png", nrow=5, normalize=True)
 
     # Calculate and log discriminator accuracy
     accuracy_real = correct_real / total_real
