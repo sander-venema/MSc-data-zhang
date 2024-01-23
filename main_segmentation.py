@@ -58,10 +58,10 @@ model.classifier = nn.Sequential(
 
 criterion = LOSSES[args.loss]
 
-model.to(device)
-
 optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=0.9)
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=5, verbose=True)
+
+model.to(device)
 
 loss_short = 'bce_dice' if args.loss == 0 else 'iou' if args.loss == 1 else 'dice' if args.loss == 2 else 'lovasz' if args.loss == 3 else 'bce_xloss'
 run_name = "resnet101_{0}_{1}".format(loss_short, LEARNING_RATE)
