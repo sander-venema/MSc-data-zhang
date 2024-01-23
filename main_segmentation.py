@@ -111,6 +111,7 @@ for epoch in tqdm(range(num_epochs)):
     dice_running = 0.0
     pixel_accuracy_running = 0.0
     iou_running = 0.0
+    val_loss_running = 0.0
     length = 0
 
     # Iterate over the validation data
@@ -119,6 +120,7 @@ for epoch in tqdm(range(num_epochs)):
         masks = masks.to(device)
 
         outputs = model(images)["out"]
+        val_loss_running += criterion(outputs, masks.to(torch.float32)).item()
 
         for j in range(len(outputs)):
             length += 1
@@ -151,7 +153,7 @@ for epoch in tqdm(range(num_epochs)):
     iou_val = iou_running / length
     writer.add_scalar("Metrics/IoU", iou_val, epoch)
 
-    val_loss = criterion(outputs, masks.to(torch.float32))
+    val_loss = val_loss_running / len(val_loader)
     scheduler.step(val_loss)
     writer.add_scalar("Loss/val", val_loss, epoch)
 
