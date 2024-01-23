@@ -16,6 +16,7 @@ class DiceLoss(nn.Module):
         dice = (2. * intersection + 1e-5) / (outputs.sum() + targets.sum() + 1e-5)
         return 1 - dice
 
+
 class BCEDiceLoss(nn.Module):
     def __init__(self):
         super().__init__()
@@ -31,6 +32,26 @@ class BCEDiceLoss(nn.Module):
         dice = 1 - dice.sum() / num
         return 0.5 * bce + dice
 
+
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=1, gamma=0, size_average=True, ignore_index=255):
+        super(FocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.ignore_index = ignore_index
+        self.size_average = size_average
+
+    def forward(self, inputs, targets):
+        ce_loss = F.cross_entropy(
+            inputs, targets, reduction='none', ignore_index=self.ignore_index)
+        pt = torch.exp(-ce_loss)
+        focal_loss = self.alpha * (1-pt)**self.gamma * ce_loss
+        if self.size_average:
+            return focal_loss.mean()
+        else:
+            return focal_loss.sum()
+
+
 class LovaszHingeLoss(nn.Module):
     def __init__(self):
         super(LovaszHingeLoss, self).__init__()
@@ -38,7 +59,8 @@ class LovaszHingeLoss(nn.Module):
     def forward(self, outputs, targets):
         loss = lovasz_hinge(outputs, targets, per_image=False)
         return loss
-    
+
+   
 class Binary_Xloss(nn.Module):
     def __init__(self):
         super(Binary_Xloss, self).__init__()
@@ -46,6 +68,7 @@ class Binary_Xloss(nn.Module):
     def forward(self, outputs, targets):
         loss = binary_xloss(outputs, targets)
         return loss
+
 
 class IoULoss(nn.Module):
     def __init__(self):

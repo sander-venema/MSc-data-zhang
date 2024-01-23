@@ -8,7 +8,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from PIL import Image
 
-from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, LovaszHingeLoss, Binary_Xloss
+from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, LovaszHingeLoss, Binary_Xloss, FocalLoss
 from utils.metrics import DiceCoefficient, PixelAccuracy, mIoU
 from utils.data_stuff import SegmentationDataset, image_transforms, mask_transforms
 
@@ -23,9 +23,9 @@ parser = argparse.ArgumentParser(description='Store training settings')
 parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
 parser.add_argument('--loss', type=int, default=0, help='Loss function; 0: BCEDiceLoss, \
-                    1: IoULoss, 2: DiceLoss, 3: LovaszHingeLoss, 4: Binary_Xloss')
+                    1: IoULoss, 2: DiceLoss, 3: LovaszHingeLoss, 4: Binary_Xloss, 5: FocalLoss')
 
-LOSSES = [BCEDiceLoss(), IoULoss(), DiceLoss(), LovaszHingeLoss(), Binary_Xloss()]
+LOSSES = [BCEDiceLoss(), IoULoss(), DiceLoss(), LovaszHingeLoss(), Binary_Xloss(), FocalLoss()]
 
 args = parser.parse_args()
 
@@ -58,12 +58,12 @@ model.classifier = nn.Sequential(
 
 criterion = LOSSES[args.loss]
 
-optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=0.9)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=5, verbose=True)
+optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=0.9, weight_decay=0.0001)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 model.to(device)
 
-loss_short = 'bce_dice' if args.loss == 0 else 'iou' if args.loss == 1 else 'dice' if args.loss == 2 else 'lovasz' if args.loss == 3 else 'bce_xloss'
+loss_short = 'bce_dice' if args.loss == 0 else 'iou' if args.loss == 1 else 'dice' if args.loss == 2 else 'lovasz' if args.loss == 3 else 'bce_xloss' if args.loss == 4 else 'focal'
 run_name = "resnet101_{0}_{1}".format(loss_short, LEARNING_RATE)
 
 writer = SummaryWriter(f"logs_segmentation/{run_name}")
