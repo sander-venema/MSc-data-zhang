@@ -155,7 +155,7 @@ for epoch in tqdm(range(num_epochs)):
     writer.add_scalar("Metrics/IoU", iou_val, epoch)
 
     val_loss = val_loss_running / len(val_loader)
-    scheduler.step(val_loss)
+    scheduler.step()
     writer.add_scalar("Loss/val", val_loss, epoch)
 
     # Save the model
