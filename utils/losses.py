@@ -32,6 +32,13 @@ class BCEDiceLoss(nn.Module):
         dice = 1 - dice.sum() / num
         return 0.5 * bce + dice
 
+class BCELoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, input, target):
+        bce = F.binary_cross_entropy_with_logits(input, target)
+        return bce
 
 class FocalLoss(nn.Module):
     def __init__(self, alpha=0.25, gamma=2, size_average=True):

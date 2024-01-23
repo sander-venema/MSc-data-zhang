@@ -3,13 +3,12 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
 import numpy as np
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from PIL import Image
 
-from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, LovaszHingeLoss, Binary_Xloss, FocalLoss
+from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, LovaszHingeLoss, Binary_Xloss, FocalLoss, BCELoss
 from utils.metrics import DiceCoefficient, PixelAccuracy, mIoU
 from utils.data_stuff import SegmentationDataset, image_transforms, mask_transforms
 
@@ -26,7 +25,7 @@ parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning
 parser.add_argument('--loss', type=int, default=0, help='Loss function; 0: BCEDiceLoss, \
                     1: IoULoss, 2: DiceLoss, 3: LovaszHingeLoss, 4: Binary_Xloss, 5: FocalLoss, 6: BCELoss')
 
-LOSSES = [BCEDiceLoss(), IoULoss(), DiceLoss(), LovaszHingeLoss(), Binary_Xloss(), FocalLoss(), F.binary_cross_entropy_with_logits()]
+LOSSES = [BCEDiceLoss(), IoULoss(), DiceLoss(), LovaszHingeLoss(), Binary_Xloss(), FocalLoss(), BCELoss()]
 
 args = parser.parse_args()
 
