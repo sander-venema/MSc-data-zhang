@@ -8,7 +8,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from PIL import Image
 
-from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, LovaszHingeLoss
+from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, LovaszHingeLoss, Binary_Xloss
 from utils.metrics import DiceCoefficient, PixelAccuracy, mIoU
 from utils.data_stuff import SegmentationDataset, image_transforms, mask_transforms
 
@@ -23,9 +23,9 @@ parser = argparse.ArgumentParser(description='Store training settings')
 parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
 parser.add_argument('--loss', type=int, default=0, help='Loss function; 0: BCEDiceLoss, \
-                    1: IoULoss, 2: DiceLoss, 3: LovaszHingeLoss')
+                    1: IoULoss, 2: DiceLoss, 3: LovaszHingeLoss, 4: Binary_Xloss')
 
-LOSSES = [BCEDiceLoss(), IoULoss(), DiceLoss(), LovaszHingeLoss()]
+LOSSES = [BCEDiceLoss(), IoULoss(), DiceLoss(), LovaszHingeLoss(), Binary_Xloss()]
 
 args = parser.parse_args()
 
@@ -58,12 +58,12 @@ model.classifier = nn.Sequential(
 
 criterion = LOSSES[args.loss]
 
+model.to(device)
+
 optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=0.9)
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=5, verbose=True)
 
-model.to(device)
-
-loss_short = 'bce_dice' if args.loss == 0 else 'iou' if args.loss == 1 else 'dice' if args.loss == 2 else 'lovasz'
+loss_short = 'bce_dice' if args.loss == 0 else 'iou' if args.loss == 1 else 'dice' if args.loss == 2 else 'lovasz' if args.loss == 3 else 'bce_xloss'
 run_name = "resnet101_{0}_{1}".format(loss_short, LEARNING_RATE)
 
 writer = SummaryWriter(f"logs_segmentation/{run_name}")

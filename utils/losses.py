@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from utils.lovasz_losses import lovasz_hinge
+from utils.lovasz_losses import lovasz_hinge, binary_xloss
 
 class DiceLoss(nn.Module):
     def __init__(self):
@@ -36,9 +36,15 @@ class LovaszHingeLoss(nn.Module):
         super(LovaszHingeLoss, self).__init__()
 
     def forward(self, outputs, targets):
-        outputs = outputs.squeeze(1)
-        targets = targets.squeeze(1)
-        loss = lovasz_hinge(outputs, targets)
+        loss = lovasz_hinge(outputs, targets, per_image=False)
+        return loss
+    
+class Binary_Xloss(nn.Module):
+    def __init__(self):
+        super(Binary_Xloss, self).__init__()
+
+    def forward(self, outputs, targets):
+        loss = binary_xloss(outputs, targets)
         return loss
 
 class IoULoss(nn.Module):
