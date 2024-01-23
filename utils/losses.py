@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from utils.lovasz_losses import lovasz_hinge
 
 class DiceLoss(nn.Module):
     def __init__(self):
@@ -30,26 +31,15 @@ class BCEDiceLoss(nn.Module):
         dice = 1 - dice.sum() / num
         return 0.5 * bce + dice
 
-class ComboLoss(nn.Module):
-    def __init__(self, weight=None, size_average=True):
-        super(ComboLoss, self).__init__()
+class LovaszHingeLoss(nn.Module):
+    def __init__(self):
+        super(LovaszHingeLoss, self).__init__()
 
-    def forward(self, inputs, targets, smooth=1, alpha=0.5, beta=0.5, eps=1e-9):
-        
-        #flatten label and prediction tensors
-        inputs = inputs.view(-1)
-        targets = targets.view(-1)
-        
-        #True Positives, False Positives & False Negatives
-        intersection = (inputs * targets).sum()    
-        dice = (2. * intersection + smooth) / (inputs.sum() + targets.sum() + smooth)
-        
-        inputs = torch.clamp(inputs, eps, 1.0 - eps)       
-        out = - (alpha * ((targets * torch.log(inputs)) + ((1 - alpha) * (1.0 - targets) * torch.log(1.0 - inputs))))
-        weighted_ce = out.mean(-1)
-        combo = (beta * weighted_ce) - ((1 - beta) * dice)
-        
-        return combo
+    def forward(self, outputs, targets):
+        outputs = outputs.squeeze(1)
+        targets = targets.squeeze(1)
+        loss = lovasz_hinge(outputs, targets)
+        return loss
 
 class IoULoss(nn.Module):
     def __init__(self):
