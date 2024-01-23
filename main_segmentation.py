@@ -3,6 +3,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import torch
 import torch.nn as nn
+from torch.nn import functional as F
 import numpy as np
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -23,9 +24,9 @@ parser = argparse.ArgumentParser(description='Store training settings')
 parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
 parser.add_argument('--loss', type=int, default=0, help='Loss function; 0: BCEDiceLoss, \
-                    1: IoULoss, 2: DiceLoss, 3: LovaszHingeLoss, 4: Binary_Xloss, 5: FocalLoss')
+                    1: IoULoss, 2: DiceLoss, 3: LovaszHingeLoss, 4: Binary_Xloss, 5: FocalLoss, 6: BCELoss')
 
-LOSSES = [BCEDiceLoss(), IoULoss(), DiceLoss(), LovaszHingeLoss(), Binary_Xloss(), FocalLoss()]
+LOSSES = [BCEDiceLoss(), IoULoss(), DiceLoss(), LovaszHingeLoss(), Binary_Xloss(), FocalLoss(), F.binary_cross_entropy_with_logits()]
 
 args = parser.parse_args()
 
@@ -63,7 +64,7 @@ scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 model.to(device)
 
-loss_short = 'bce_dice' if args.loss == 0 else 'iou' if args.loss == 1 else 'dice' if args.loss == 2 else 'lovasz' if args.loss == 3 else 'bce_xloss' if args.loss == 4 else 'focal'
+loss_short = 'bce_dice' if args.loss == 0 else 'iou' if args.loss == 1 else 'dice' if args.loss == 2 else 'lovasz' if args.loss == 3 else 'bce_xloss' if args.loss == 4 else 'focal' if args.loss == 5 else 'bce'
 run_name = "resnet101_{0}_{1}".format(loss_short, LEARNING_RATE)
 
 writer = SummaryWriter(f"logs_segmentation/{run_name}")

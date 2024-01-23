@@ -34,7 +34,7 @@ class BCEDiceLoss(nn.Module):
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=2, gamma=0.25, size_average=True):
+    def __init__(self, alpha=0.25, gamma=2, size_average=True):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
         self.gamma = gamma
