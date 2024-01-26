@@ -15,6 +15,9 @@ from utils.data_stuff import SegmentationDataset, image_transforms, mask_transfo
 from torchvision.models.segmentation import deeplabv3_resnet101
 from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 
+from backbones_unet.model.unet import Unet
+from backbones_unet.utils.dataset import SemanticSegmentationDataset
+
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -35,38 +38,28 @@ LEARNING_RATE = args.learning_rate
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-dataset = SegmentationDataset('new_dataset/', image_transforms, mask_transforms)
+dataset = SemanticSegmentationDataset('new_dataset/images', 'new_dataset/labels')
 train_dataset, val_dataset = torch.utils.data.random_split(dataset, [int(0.8 * len(dataset)), len(dataset) - int(0.8 * len(dataset))])
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, drop_last=True)
 
-model = deeplabv3_resnet101(weights="DeepLabV3_ResNet101_Weights.DEFAULT")
-model.classifier = DeepLabHead(2048, 1)
-
-# model.classifier = nn.Sequential(
-#             nn.Conv2d(2048, 512, kernel_size=3, stride=1, padding=1, bias=False),
-#             nn.BatchNorm2d(512),
-#             nn.ReLU(),
-#             nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
-#             nn.BatchNorm2d(256),
-#             nn.ReLU(),
-#             nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
-#             nn.BatchNorm2d(128),
-#             nn.ReLU(),
-#             nn.Conv2d(128, 1, kernel_size=1, stride=1),
-#             nn.Sigmoid()
-#         )
+model = Unet(
+    backbone='vgg16',
+    in_channels=3,
+    num_classes=1,
+)
 
 criterion = LOSSES[args.loss]
 
-optimizer = optim.AdamW(model.classifier.parameters(), lr=LEARNING_RATE)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+params = [p for p in model.parameters() if p.requires_grad]
+optimizer = optim.AdamW(params, lr=LEARNING_RATE)
+# scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 model.to(device)
 
 loss_short = 'bce_dice' if args.loss == 0 else 'iou' if args.loss == 1 else 'dice' if args.loss == 2 else 'lovasz' if args.loss == 3 else 'bce_xloss' if args.loss == 4 else 'focal' if args.loss == 5 else 'bce' if args.loss == 6 else 'dice_bce'
-run_name = "resnet101_{0}_{1}".format(loss_short, LEARNING_RATE)
+run_name = "unet_vgg16_{0}_{1}".format(loss_short, LEARNING_RATE)
 
 writer = SummaryWriter(f"logs_segmentation/{run_name}")
 
@@ -90,7 +83,7 @@ for epoch in tqdm(range(num_epochs)):
         masks = masks.to(device)
 
         optimizer.zero_grad()
-        outputs = model(images)["out"]
+        outputs = model(images)
         loss = criterion(outputs, masks.to(torch.float32))
 
         if i%10 == 0:
@@ -121,7 +114,7 @@ for epoch in tqdm(range(num_epochs)):
         images = images.to(device)
         masks = masks.to(device)
 
-        outputs = model(images)["out"]
+        outputs = model(images)
         val_loss_running += criterion(outputs, masks.to(torch.float32)).item()
 
         for j in range(len(outputs)):
@@ -156,7 +149,7 @@ for epoch in tqdm(range(num_epochs)):
     writer.add_scalar("Metrics/IoU", iou_val, epoch)
 
     val_loss = val_loss_running / len(val_loader)
-    scheduler.step()
+    # scheduler.step()
     writer.add_scalar("Loss/val", val_loss, epoch)
 
     # Save the model
