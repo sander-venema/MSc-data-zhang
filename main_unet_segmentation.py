@@ -2,7 +2,6 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import torch
-import torch.nn as nn
 import numpy as np
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -10,10 +9,6 @@ from PIL import Image
 
 from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, LovaszHingeLoss, Binary_Xloss, FocalLoss, BCELoss, DiceBCELoss
 from utils.metrics import DiceCoefficient, PixelAccuracy, mIoU
-from utils.data_stuff import SegmentationDataset, image_transforms, mask_transforms
-
-from torchvision.models.segmentation import deeplabv3_resnet101
-from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 
 from backbones_unet.model.unet import Unet
 from backbones_unet.utils.dataset import SemanticSegmentationDataset
