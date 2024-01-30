@@ -12,13 +12,18 @@ prefixes = ['BreaDM-Ma-', 'BreaDM-Be-']
 
 directory_path = 'data/seg/'
 
-img_dir = 'data/seg/train/images/'
+train_dir = 'new_dataset/train/'
+test_dir = 'new_dataset/test/'
 
 new_directory = 'new_dataset/'
 os.makedirs(new_directory, exist_ok=True)
 
 for split in ttv:
     print('Split: ' + split)
+    if split == 'train' or split == 'val':
+        new_directory = 'new_dataset/train/'
+    elif split == 'test':
+        new_directory = 'new_dataset/test/'
     for soort in types:
         print('Type: ' + soort)
         for prefix in prefixes:
