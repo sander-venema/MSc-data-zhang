@@ -5,7 +5,5 @@ playground_runs/
 playground/
 generated_images/
 saved_models/
-logs_segmentation/
-logs_generation/
 output_segmentation/
 *.pyc
