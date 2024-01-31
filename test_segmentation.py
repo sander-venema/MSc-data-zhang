@@ -1,11 +1,10 @@
 import os
 import torch
 import numpy as np
-from PIL import Image
-from torchvision import transforms
-from torchvision.utils import draw_segmentation_masks
 from backbones_unet.model.unet import Unet
 from backbones_unet.utils.dataset import SemanticSegmentationDataset
+
+from skimage import color
 
 import torchvision.transforms.functional as F
 import matplotlib.pyplot as plt
@@ -48,15 +47,19 @@ model.load_state_dict(torch.load("saved_models/segmentation/" + args.model))
 model.to(device)
 model.eval()
 
-resize = transforms.Resize(size=(256, 256))
-# Iterate through each image in the dataset
-
 for i, (images, masks) in enumerate(test_loader):
     images = images.to(device)
-    images = images.unsqueeze(0)
-    output = model(images)
-    output = torch.sigmoid(output)
-    images = (images*255).to(torch.uint8)
-    output = output.cpu()
-    stack_mask = draw_segmentation_masks(images, masks=output, alpha=0.5)
-    show(stack_mask)
+    masks = masks.to(device)
+
+    with torch.no_grad():
+        outputs = model(images)
+        outputs = torch.sigmoid(outputs)
+        outputs = (outputs > 0.5).float()
+
+    image = images.cpu().numpy()
+    mask = outputs.cpu().numpy()
+
+    plt.imshow(image[0].transpose(1, 2, 0), cmap='gray')
+    plt.imshow(mask[0].transpose(1, 2, 0), cmap='autumn', alpha=0.5)
+    plt.imshow(masks[0].cpu().numpy().transpose(1, 2, 0), cmap='winter', alpha=0.5)
+    plt.show()
