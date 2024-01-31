@@ -2,7 +2,6 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import torch
-import torch.nn as nn
 import numpy as np
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -35,28 +34,14 @@ LEARNING_RATE = args.learning_rate
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-dataset = SegmentationDataset('new_dataset/', image_transforms, mask_transforms)
-train_dataset, val_dataset = torch.utils.data.random_split(dataset, [int(0.8 * len(dataset)), len(dataset) - int(0.8 * len(dataset))])
+dataset = SegmentationDataset('new_dataset/train', image_transforms, mask_transforms)
+train_dataset, val_dataset = torch.utils.data.random_split(dataset, [int(0.9 * len(dataset)), len(dataset) - int(0.9 * len(dataset))])
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, drop_last=True)
 
 model = deeplabv3_resnet101(weights="DeepLabV3_ResNet101_Weights.DEFAULT")
 model.classifier = DeepLabHead(2048, 1)
-
-# model.classifier = nn.Sequential(
-#             nn.Conv2d(2048, 512, kernel_size=3, stride=1, padding=1, bias=False),
-#             nn.BatchNorm2d(512),
-#             nn.ReLU(),
-#             nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
-#             nn.BatchNorm2d(256),
-#             nn.ReLU(),
-#             nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
-#             nn.BatchNorm2d(128),
-#             nn.ReLU(),
-#             nn.Conv2d(128, 1, kernel_size=1, stride=1),
-#             nn.Sigmoid()
-#         )
 
 criterion = LOSSES[args.loss]
 

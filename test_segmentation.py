@@ -1,12 +1,26 @@
 import os
-
 import torch
 import numpy as np
 from PIL import Image
-import argparse
-
+from torchvision import transforms
+from torchvision.utils import draw_segmentation_masks
 from backbones_unet.model.unet import Unet
 from backbones_unet.utils.dataset import SemanticSegmentationDataset
+
+import torchvision.transforms.functional as F
+import matplotlib.pyplot as plt
+
+import argparse
+
+def show(imgs):
+    if not isinstance(imgs, list):
+        imgs = [imgs]
+    fig, axs = plt.subplots(ncols=len(imgs), squeeze=False)
+    for i, img in enumerate(imgs):
+        img = img.detach()
+        img = F.to_pil_image(img)
+        axs[0, i].imshow(np.asarray(img))
+        axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
 
 parser = argparse.ArgumentParser(description='Store test settings')
 parser.add_argument('--model', type=str, default='unet_vgg16_dice_bce_0.0001.pth', help='Model name')
@@ -15,7 +29,14 @@ args = parser.parse_args()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-dataset = SemanticSegmentationDataset('new_dataset/images', 'new_dataset/labels')
+dataset_path = 'new_dataset/test'
+output_path = 'output_directory'
+
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
+
+dataset = SemanticSegmentationDataset(os.path.join(dataset_path, 'images'), os.path.join(dataset_path, 'labels'))
+test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
 
 model = Unet(
     backbone='vgg16',
@@ -27,31 +48,15 @@ model.load_state_dict(torch.load("saved_models/segmentation/" + args.model))
 model.to(device)
 model.eval()
 
-for i in range(len(dataset)):
-    img, mask = dataset[i]
-    img = img.unsqueeze(0).to(device)
-    mask = mask.unsqueeze(0).to(device)
+resize = transforms.Resize(size=(256, 256))
+# Iterate through each image in the dataset
 
-    with torch.no_grad():
-        pred_mask = model(img)
-
-    # Stack masks on images
-    img = img.cpu().numpy()
-    mask = mask.cpu().numpy()
-    pred_mask = pred_mask.cpu().numpy()
-
-    img = img.squeeze()
-    mask = mask.squeeze()
-    pred_mask = pred_mask.squeeze()
-
-    img = np.moveaxis(img, 0, -1)
-    mask = np.moveaxis(mask, 0, -1)
-    pred_mask = np.moveaxis(pred_mask, 0, -1)
-
-    stacked_array = np.concatenate((img, mask, pred_mask), axis=2)
-
-    stacked_array = stacked_array * 255
-    stacked_array = stacked_array.astype(np.uint8)
-
-    output = Image.fromarray(stacked_array)
-    output.save('output_segmentation/test_pred/' + str(i) + '.png')
+for i, (images, masks) in enumerate(test_loader):
+    images = images.to(device)
+    images = images.unsqueeze(0)
+    output = model(images)
+    output = torch.sigmoid(output)
+    images = (images*255).to(torch.uint8)
+    output = output.cpu()
+    stack_mask = draw_segmentation_masks(images, masks=output, alpha=0.5)
+    show(stack_mask)

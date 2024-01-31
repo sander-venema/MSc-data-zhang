@@ -35,11 +35,11 @@ LEARNING_RATE = args.learning_rate
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-dataset = SemanticSegmentationDataset('new_dataset/images', 'new_dataset/labels')
-train_dataset, val_dataset = torch.utils.data.random_split(dataset, [int(0.8 * len(dataset)), len(dataset) - int(0.8 * len(dataset))])
+dataset = SemanticSegmentationDataset('new_dataset/train/images', 'new_dataset/train/labels')
+train_dataset, val_dataset = torch.utils.data.random_split(dataset, [int(0.9 * len(dataset)), len(dataset) - int(0.9 * len(dataset))])
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
-val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, drop_last=True)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
 
 model = Unet(
     backbone='vgg16',
@@ -56,7 +56,7 @@ optimizer = optim.AdamW(params, lr=LEARNING_RATE)
 model.to(device)
 
 loss_short = 'bce_dice' if args.loss == 0 else 'iou' if args.loss == 1 else 'dice' if args.loss == 2 else 'lovasz' if args.loss == 3 else 'bce_xloss' if args.loss == 4 else 'focal' if args.loss == 5 else 'bce' if args.loss == 6 else 'dice_bce'
-run_name = "unet_vgg16_{0}_{1}".format(loss_short, LEARNING_RATE)
+run_name = "unet_vgg16_{0}_{1}_new".format(loss_short, LEARNING_RATE)
 
 writer = SummaryWriter(f"logs_segmentation/{run_name}")
 
@@ -123,8 +123,8 @@ for epoch in tqdm(range(num_epochs)):
             dice_running += DiceCoefficient(output, masks[j])
             pixel_accuracy_running += PixelAccuracy(output, masks[j])
             iou_running += mIoU(output, masks[j])
-            precision_running += precision_score(masks[j].to("cpu").numpy().flatten(), output.to("cpu").numpy().flatten())
-            recall_running += recall_score(masks[j].to("cpu").numpy().flatten(), output.to("cpu").numpy().flatten())
+            precision_running += precision_score(masks[j].to("cpu").numpy().flatten(), output.to("cpu").numpy().flatten(), zero_division=0)
+            recall_running += recall_score(masks[j].to("cpu").numpy().flatten(), output.to("cpu").numpy().flatten(), zero_division=0)
 
         if i%10 == 0:
             print(f"Validation Batch {i + 1}/{len(val_loader)}")
