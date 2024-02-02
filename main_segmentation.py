@@ -11,6 +11,8 @@ from utils.losses import BCEDiceLoss, IoULoss, DiceLoss, LovaszHingeLoss, Binary
 from utils.metrics import DiceCoefficient, PixelAccuracy, mIoU
 from utils.data_stuff import SegmentationDataset, image_transforms, mask_transforms
 
+from sklearn.metrics import precision_score, recall_score
+
 from torchvision.models.segmentation import deeplabv3_resnet101
 from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 
@@ -99,6 +101,8 @@ for epoch in tqdm(range(num_epochs)):
     pixel_accuracy_running = 0.0
     iou_running = 0.0
     val_loss_running = 0.0
+    precision_running = 0.0
+    recall_running = 0.0
     length = 0
 
     # Iterate over the validation data
@@ -116,6 +120,8 @@ for epoch in tqdm(range(num_epochs)):
             dice_running += DiceCoefficient(output, masks[j])
             pixel_accuracy_running += PixelAccuracy(output, masks[j])
             iou_running += mIoU(output, masks[j])
+            precision_running += precision_score(masks[j].to("cpu").numpy().flatten(), output.to("cpu").numpy().flatten(), zero_division=0)
+            recall_running += recall_score(masks[j].to("cpu").numpy().flatten(), output.to("cpu").numpy().flatten(), zero_division=0)
 
         if i%10 == 0:
             print(f"Validation Batch {i + 1}/{len(val_loader)}")
@@ -139,6 +145,14 @@ for epoch in tqdm(range(num_epochs)):
     # Compute average IoU
     iou_val = iou_running / length
     writer.add_scalar("Metrics/IoU", iou_val, epoch)
+
+    # Compute average precision
+    precision_val = precision_running / length
+    writer.add_scalar("Metrics/Precision", precision_val, epoch)
+
+    # Compute average recall
+    recall_val = recall_running / length
+    writer.add_scalar("Metrics/Recall", recall_val, epoch)
 
     val_loss = val_loss_running / len(val_loader)
     scheduler.step()
