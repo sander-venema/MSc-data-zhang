@@ -15,6 +15,7 @@ class Generator(nn.Module):
         self.model = nn.Sequential(
             *block(100, 128, normalize=False),
             *block(128, 256),
+            # nn.Dropout(0.5),
             *block(256, 512),
             *block(512, 1024),
             nn.Linear(1024, int(np.prod(img_shape))),
