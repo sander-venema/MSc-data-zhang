@@ -22,7 +22,7 @@ BATCH_SIZE = args.batch_size
 LEARNING_RATE = args.learning_rate
 IMAGE_SIZE = 512
 
-filename = "wass_{0}_{1}_1in5gen".format(IMAGE_SIZE, LEARNING_RATE)
+filename = "wass_{0}_{1}_1in5dis".format(IMAGE_SIZE, LEARNING_RATE)
 saving_path = "generated_images/{0}".format(filename)
 
 os.makedirs(saving_path, exist_ok=True)
@@ -69,8 +69,6 @@ for epoch in tqdm(range(num_epochs)):
         real_imgs = real_imgs.to("cuda")
 
         batch_size = real_imgs.size(0)
-        real_labels = torch.ones(batch_size, 1).to("cuda")
-        fake_labels = torch.zeros(batch_size, 1).to("cuda")
 
         # ---------------------
         #  Train Discriminator
@@ -85,13 +83,15 @@ for epoch in tqdm(range(num_epochs)):
         z = torch.randn(batch_size, latent_dim).to("cuda")
         fake_imgs = G(z)
         fake_outputs = D(fake_imgs.detach())
-        d_loss = torch.mean(D(fake_imgs)) - torch.mean(D(real_imgs))
-        d_loss.backward()
-        optimizer_D.step()
 
-        # Clip discriminator weights
-        for p in D.parameters():
-            p.data.clamp_(-0.01, 0.01)
+        if (i + 1) % 5 == 0: # Train the discriminator every 5 batches
+            d_loss = torch.mean(D(fake_imgs)) - torch.mean(D(real_imgs))
+            d_loss.backward()
+            optimizer_D.step()
+
+            # Clip discriminator weights
+            for p in D.parameters():
+                p.data.clamp_(-0.01, 0.01)
 
         # Discriminator accuracy
         total_real += batch_size
@@ -104,18 +104,18 @@ for epoch in tqdm(range(num_epochs)):
         #  Train Generator
         # ---------------------
 
-        if (i + 1) % 5 == 0: # Train the generator every 5 batches
-            G.zero_grad()
+        # if (i + 1) % 5 == 0: # Train the generator every 5 batches
+        G.zero_grad()
 
-            # Generate fake images
-            z = torch.randn(batch_size, latent_dim).to("cuda")
-            fake_imgs = G(z)
-            fake_outputs = D(fake_imgs)
+        # Generate fake images
+        z = torch.randn(batch_size, latent_dim).to("cuda")
+        fake_imgs = G(z)
+        fake_outputs = D(fake_imgs)
 
-            # Generator loss
-            g_loss = -torch.mean(D(fake_imgs))
-            g_loss.backward()
-            optimizer_G.step()
+        # Generator loss
+        g_loss = -torch.mean(D(fake_imgs))
+        g_loss.backward()
+        optimizer_G.step()
 
     # Save generated images at the end of each epoch
     if (epoch + 1) % 10 == 0:
