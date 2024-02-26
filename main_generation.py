@@ -5,7 +5,7 @@ from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import save_image
 
-from archs.model_wass import Generator, Discriminator
+from archs.model_wass import Generator, Discriminator, Discriminator_2
 from utils.data_stuff import GenerationDataset
 from tqdm import tqdm
 
@@ -22,14 +22,14 @@ BATCH_SIZE = args.batch_size
 LEARNING_RATE = args.learning_rate
 IMAGE_SIZE = 512
 
-filename = "wass_{0}_{1}_1in5dis".format(IMAGE_SIZE, LEARNING_RATE)
+filename = "wass_{0}_newmodel".format(LEARNING_RATE)
 saving_path = "generated_images/{0}".format(filename)
 
 os.makedirs(saving_path, exist_ok=True)
 
 # Initialize the new Generator and Discriminator and move them to the GPU
 G = Generator().to("cuda")
-D = Discriminator().to("cuda")
+D = Discriminator_2().to("cuda")
 
 # Load pretrained model state dictionaries
 pretrained_path = "models/imagenet-512-state.pt"
@@ -77,6 +77,7 @@ for epoch in tqdm(range(num_epochs)):
         D.zero_grad()
 
         # Real images
+        print(real_imgs.shape)
         real_outputs = D(real_imgs)
 
         # Fake images
