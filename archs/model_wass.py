@@ -1,6 +1,7 @@
 from torch import nn
 import numpy as np
-torch.backends.cudnn.enabled = False
+import torch
+# torch.backends.cudnn.enabled = False
 
 img_shape = (1, 369, 369)
 
@@ -34,6 +35,7 @@ class Discriminator(nn.Module):
             nn.Linear(369 ** 2, 512),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(256, 1),
         )
