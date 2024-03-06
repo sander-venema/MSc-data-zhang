@@ -5,7 +5,7 @@ from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import save_image
 
-from archs.model_wass import Generator, Generator_2, Generator_3, Discriminator, Discriminator_2, Discriminator_3
+from archs.model_dcgan import Generator, Discriminator
 from utils.data_stuff import GenerationDataset
 from tqdm import tqdm
 
@@ -13,8 +13,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Store training settings')
 parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
-parser.add_argument('--learning_rate', type=float, default=5e-5, help='Learning rate')
-parser.add_argument('--loss', type=int, default=0, help='Loss function; 0: Wasserstein,')
+parser.add_argument('--learning_rate', type=float, default=0.0002, help='Learning rate')
 
 args = parser.parse_args()
 
@@ -22,24 +21,17 @@ BATCH_SIZE = args.batch_size
 LEARNING_RATE = args.learning_rate
 IMAGE_SIZE = 512
 
-filename = "wass_{0}_1in5gen_yandex2".format(LEARNING_RATE)
+filename = "dcgan_{0}".format(LEARNING_RATE)
 saving_path = "generated_images/{0}".format(filename)
 
 os.makedirs(saving_path, exist_ok=True)
 
-# Initialize the new Generator and Discriminator and move them to the GPU
-G = Generator().to("cuda")
-D = Discriminator_3().to("cuda")
-
-# Load pretrained model state dictionaries
-pretrained_path = "models/imagenet-512-state.pt"
-
-G.load_state_dict(torch.load(pretrained_path)["G"], strict=False)
-D.load_state_dict(torch.load(pretrained_path)["D"], strict=False)
+G = Generator(channels=1).to("cuda")
+D = Discriminator(channels=1).to("cuda")
 
 transform = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Grayscale(),
+    transforms.Grayscale(num_output_channels=1),
     transforms.Normalize((0.5,), (0.5,))
 ])
 
@@ -47,9 +39,9 @@ dataset = GenerationDataset(root_dir="new_dataset/train/images/", transform=tran
 data_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
 # Define the loss function and optimizers
-# criterion = 
-optimizer_G = torch.optim.RMSprop(G.parameters(), lr=LEARNING_RATE, weight_decay=2e-5)
-optimizer_D = torch.optim.RMSprop(D.parameters(), lr=LEARNING_RATE, weight_decay=2e-5)
+criterion = torch.nn.BCELoss()  # Binary Cross-Entropy Loss for DCGAN
+optimizer_G = torch.optim.Adam(G.parameters(), lr=LEARNING_RATE, betas=(0.5, 0.999))
+optimizer_D = torch.optim.Adam(D.parameters(), lr=LEARNING_RATE, betas=(0.5, 0.999))
 
 # TensorBoard writer
 writer = SummaryWriter(f"logs_generation/{filename}")
@@ -74,47 +66,45 @@ for epoch in tqdm(range(num_epochs)):
         #  Train Discriminator
         # ---------------------
 
-        D.zero_grad()
+        z = torch.randn(batch_size, latent_dim, 1, 1).to("cuda")
+        real_labels = torch.ones(batch_size).to("cuda")
+        fake_labels = torch.zeros(batch_size).to("cuda")
 
-        # Real images
-        real_outputs = D(real_imgs)
+        outputs = D(real_imgs)
+        # print(real_imgs.shape)
+        # print(outputs.shape, real_labels.shape)
+        d_loss_real = criterion(outputs.flatten(), real_labels)
+        real_score = outputs
 
-        # Fake images
-        z = torch.randn(batch_size, latent_dim).to("cuda")
         fake_imgs = G(z)
-        fake_outputs = D(fake_imgs.detach())
+        outputs = D(fake_imgs)
+        d_loss_fake = criterion(outputs.flatten(), fake_labels)
+        fake_score = outputs
 
-        d_loss = torch.mean(D(fake_imgs)) - torch.mean(D(real_imgs))
+        d_loss = d_loss_real + d_loss_fake
+        D.zero_grad()
         d_loss.backward()
         optimizer_D.step()
 
-        # Clip discriminator weights
-        for p in D.parameters():
-            p.data.clamp_(-0.01, 0.01)
-
         # Discriminator accuracy
         total_real += batch_size
-        correct_real += (real_outputs > 0.5).sum().item()
+        correct_real += (real_score > 0.5).sum().item()
 
         total_fake += batch_size
-        correct_fake += (fake_outputs <= 0.5).sum().item()
+        correct_fake += (fake_score <= 0.5).sum().item()
 
         # ---------------------
         #  Train Generator
         # ---------------------
 
-        if (i + 1) % 5 == 0: # Train the generator every 5 batches
-            G.zero_grad()
+        z = torch.randn(batch_size, latent_dim, 1, 1).to("cuda")
+        fake_imgs = G(z)
+        outputs = D(fake_imgs)
+        g_loss = criterion(outputs.flatten(), real_labels)
 
-            # Generate fake images
-            z = torch.randn(batch_size, latent_dim).to("cuda")
-            fake_imgs = G(z)
-            fake_outputs = D(fake_imgs)
-
-            # Generator loss
-            g_loss = -torch.mean(D(fake_imgs))
-            g_loss.backward()
-            optimizer_G.step()
+        G.zero_grad()
+        g_loss.backward()
+        optimizer_G.step()
 
     # Save generated images at the end of each epoch
     if (epoch + 1) % 10 == 0:

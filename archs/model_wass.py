@@ -21,10 +21,55 @@ class Generator(nn.Module):
             *block(256, 512),
             *block(512, 1024),
             nn.Linear(1024, int(np.prod(img_shape))),
-            nn.Tanh()
+            # nn.Tanh()
         )
+
     def forward(self, z):
         img = self.model(z)
+        img = img.view(img.shape[0], *img_shape)
+        return img
+
+class Generator_2(nn.Module):
+    def __init__(self):
+        super(Generator_2, self).__init__()
+        self.model = nn.Sequential(
+            nn.ConvTranspose2d(100, 512, kernel_size=4, stride=1, padding=0),
+            nn.BatchNorm2d(512),
+            nn.ReLU(True),
+
+            nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(True),
+
+            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(True),
+
+            nn.ConvTranspose2d(128, 1, kernel_size=4, stride=2, padding=1),
+            nn.Tanh()
+        )
+
+    def forward(self, z):
+        z = z.view(z.size(0), z.size(1), 1, 1)
+        img = self.model(z)
+        return img
+    
+class Generator_3(nn.Module):
+    def __init__(self, width=369):
+        super(Generator_3, self).__init__()
+
+        self.dim_z = 100
+        self.module = nn.Sequential(
+            nn.Linear(self.dim_z, width), nn.BatchNorm1d(width), nn.ReLU(),
+            nn.Linear(width, 2 * width), nn.BatchNorm1d(2 * width), nn.ReLU(),
+            nn.Linear(2 * width, 2 * width), nn.BatchNorm1d(2 * width), nn.ReLU(),
+            nn.Linear(2 * width, 2 * width), nn.BatchNorm1d(2 * width), nn.ReLU(),
+            nn.Linear(2 * width, width), nn.BatchNorm1d(width), nn.ReLU(),
+            nn.Linear(width, 369 ** 2), nn.Tanh()
+        )
+
+    def forward(self, z):
+        img = self.module(z)
         img = img.view(img.shape[0], *img_shape)
         return img
 
@@ -35,10 +80,12 @@ class Discriminator(nn.Module):
             nn.Linear(369 ** 2, 512),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
+            # nn.BatchNorm1d(256),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(256, 1),
+            nn.Sigmoid()
         )
+
     def forward(self, img):
         img_flat = img.view(img.shape[0], -1)
         validity = self.model(img_flat)
@@ -62,7 +109,23 @@ class Discriminator_2(nn.Module):
         )
         self.output = nn.Sequential(
             nn.Conv2d(in_channels=1024, out_channels=1, kernel_size=4, stride=1, padding=0))
+        
     def forward(self, img):
         x = self.model(img)
         return self.output(x)
     
+class Discriminator_3(nn.Module):
+    def __init__(self, width=369, return_probs=True):
+        super(Discriminator_3, self).__init__()
+
+        self.module = nn.Sequential(
+            nn.Linear(369 ** 2, width), nn.ReLU(),
+            nn.Linear(width, 2 * width), nn.ReLU(),
+            nn.Linear(2 * width, 2 * width), nn.ReLU(),
+            nn.Linear(2 * width, width), nn.ReLU(),
+            nn.Linear(width, 1), nn.Sigmoid() if return_probs else nn.Sequential(),
+        )
+
+    def forward(self, z):
+        img_flat = z.view(z.shape[0], -1)
+        return self.module(img_flat)
