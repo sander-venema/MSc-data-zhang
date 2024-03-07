@@ -22,13 +22,13 @@ BATCH_SIZE = args.batch_size
 LEARNING_RATE = args.learning_rate
 IMAGE_SIZE = 512
 
-filename = "wass_{0}_1in5gen_yandex2".format(LEARNING_RATE)
+filename = "wass_{0}_1in5gen_yandex3".format(LEARNING_RATE)
 saving_path = "generated_images/{0}".format(filename)
 
 os.makedirs(saving_path, exist_ok=True)
 
 # Initialize the new Generator and Discriminator and move them to the GPU
-G = Generator().to("cuda")
+G = Generator_3().to("cuda")
 D = Discriminator_3().to("cuda")
 
 # Load pretrained model state dictionaries

@@ -21,13 +21,16 @@ BATCH_SIZE = args.batch_size
 LEARNING_RATE = args.learning_rate
 IMAGE_SIZE = 512
 
-filename = "dcgan_{0}".format(LEARNING_RATE)
+filename = "dcgan_{0}_pt".format(LEARNING_RATE)
 saving_path = "generated_images/{0}".format(filename)
 
 os.makedirs(saving_path, exist_ok=True)
 
 G = Generator(channels=1).to("cuda")
 D = Discriminator(channels=1).to("cuda")
+
+G.load_state_dict(torch.load("netG_epoch_299.pth"), strict=False)
+D.load_state_dict(torch.load("netD_epoch_299.pth"), strict=False)
 
 transform = transforms.Compose([
     transforms.ToTensor(),

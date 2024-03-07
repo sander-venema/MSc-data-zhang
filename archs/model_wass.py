@@ -33,19 +33,23 @@ class Generator_2(nn.Module):
     def __init__(self):
         super(Generator_2, self).__init__()
         self.model = nn.Sequential(
-            nn.ConvTranspose2d(100, 512, kernel_size=4, stride=1, padding=0),
+            nn.ConvTranspose2d(100, 512, 4, 1, 0, bias=False),
             nn.BatchNorm2d(512),
             nn.ReLU(True),
 
-            nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(512, 256, 4, 2, 1, bias=False),
             nn.BatchNorm2d(256),
             nn.ReLU(True),
 
-            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(256, 128, 4, 2, 1, bias=False),
             nn.BatchNorm2d(128),
             nn.ReLU(True),
 
-            nn.ConvTranspose2d(128, 1, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(128, 64, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(64),
+            nn.ReLU(True),
+
+            nn.ConvTranspose2d(64, 1, 4, 2, 1),
             nn.Tanh()
         )
 
@@ -95,24 +99,27 @@ class Discriminator_2(nn.Module):
     def __init__(self):
         super(Discriminator_2, self).__init__()
         self.model = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=256, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(1, 64, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, True),
+
+            nn.Conv2d(64, 128, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2, True),
+
+            nn.Conv2d(128, 256, 4, 2, 1, bias=False),
             nn.BatchNorm2d(256),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2, True),
 
-            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(256, 512, 4, 2, 1, bias=False),
             nn.BatchNorm2d(512),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2, True),
 
-            nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm2d(1024),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(512, 1, 4, 1, 0),
         )
-        self.output = nn.Sequential(
-            nn.Conv2d(in_channels=1024, out_channels=1, kernel_size=4, stride=1, padding=0))
         
     def forward(self, img):
         x = self.model(img)
-        return self.output(x)
+        return torch.flatten(x)
     
 class Discriminator_3(nn.Module):
     def __init__(self, width=369, return_probs=True):
@@ -123,7 +130,8 @@ class Discriminator_3(nn.Module):
             nn.Linear(width, 2 * width), nn.ReLU(),
             nn.Linear(2 * width, 2 * width), nn.ReLU(),
             nn.Linear(2 * width, width), nn.ReLU(),
-            nn.Linear(width, 1), nn.Sigmoid() if return_probs else nn.Sequential(),
+            nn.Linear(width, 1)
+            #, nn.Sigmoid() if return_probs else nn.Sequential(),
         )
 
     def forward(self, z):
