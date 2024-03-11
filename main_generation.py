@@ -4,38 +4,24 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import save_image
-
-from archs.model_wass import Generator, Generator_2, Generator_3, Discriminator, Discriminator_2, Discriminator_3
+from sklearn.model_selection import KFold
+from archs.model_wass import Generator_3, Discriminator_3
 from utils.data_stuff import GenerationDataset
 from tqdm import tqdm
-
 import argparse
 
 parser = argparse.ArgumentParser(description='Store training settings')
 parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
 parser.add_argument('--learning_rate', type=float, default=5e-5, help='Learning rate')
-parser.add_argument('--loss', type=int, default=0, help='Loss function; 0: Wasserstein,')
+parser.add_argument('--latent_dim', type=int, default=100, help='Latent dimension')
+parser.add_argument('--num_epochs', type=int, default=1000, help='Number of epochs')
 
 args = parser.parse_args()
 
 BATCH_SIZE = args.batch_size
 LEARNING_RATE = args.learning_rate
-IMAGE_SIZE = 512
-
-filename = "wass_{0}_1in5gen_yandex3".format(LEARNING_RATE)
-saving_path = "generated_images/{0}".format(filename)
-
-os.makedirs(saving_path, exist_ok=True)
-
-# Initialize the new Generator and Discriminator and move them to the GPU
-G = Generator_3().to("cuda")
-D = Discriminator_3().to("cuda")
-
-# Load pretrained model state dictionaries
-pretrained_path = "models/imagenet-512-state.pt"
-
-G.load_state_dict(torch.load(pretrained_path)["G"], strict=False)
-D.load_state_dict(torch.load(pretrained_path)["D"], strict=False)
+latent_dim = args.latent_dim
+num_epochs = args.num_epochs
 
 transform = transforms.Compose([
     transforms.ToTensor(),
@@ -44,96 +30,168 @@ transform = transforms.Compose([
 ])
 
 dataset = GenerationDataset(root_dir="new_dataset/train/images/", transform=transform)
-data_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
-# Define the loss function and optimizers
-# criterion = 
-optimizer_G = torch.optim.RMSprop(G.parameters(), lr=LEARNING_RATE, weight_decay=2e-5)
-optimizer_D = torch.optim.RMSprop(D.parameters(), lr=LEARNING_RATE, weight_decay=2e-5)
+# Use KFold for 3-fold cross-validation
+kf = KFold(n_splits=3, shuffle=True, random_state=42)
 
-# TensorBoard writer
-writer = SummaryWriter(f"logs_generation/{filename}")
+for fold, (train_index, val_index) in enumerate(kf.split(dataset)):
+    G = Generator_3().to("cuda")
+    D = Discriminator_3().to("cuda")
 
-num_epochs = 500
-latent_dim = 100
+    G.load_state_dict(torch.load("models/imagenet-512-state.pt")["G"], strict=False)
+    D.load_state_dict(torch.load("models/imagenet-512-state.pt")["D"], strict=False)
 
-# Training loop
-for epoch in tqdm(range(num_epochs)):
-    total_real = 0
-    correct_real = 0
-    total_fake = 0
-    correct_fake = 0
+    optimizer_G = torch.optim.RMSprop(G.parameters(), lr=LEARNING_RATE, weight_decay=2e-5)
+    optimizer_D = torch.optim.RMSprop(D.parameters(), lr=LEARNING_RATE, weight_decay=2e-5) 
 
-    for i, real_imgs in enumerate(data_loader):
-        # Move real_imgs to the GPU
-        real_imgs = real_imgs.to("cuda")
+    train_dataset = torch.utils.data.Subset(dataset, train_index)
+    val_dataset = torch.utils.data.Subset(dataset, val_index)
 
-        batch_size = real_imgs.size(0)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
-        # ---------------------
-        #  Train Discriminator
-        # ---------------------
+    filename = "wass_{0}_fold_{1}".format(LEARNING_RATE, fold)
+    saving_path = "generated_images/{0}".format(filename)
+    writer = SummaryWriter(f"logs_generation/{filename}")
+    os.makedirs(saving_path, exist_ok=True)
 
-        D.zero_grad()
+    cur_best_real = 0
+    cur_best_fake = 0
 
-        # Real images
-        real_outputs = D(real_imgs)
+    # Training loop
+    for epoch in tqdm(range(num_epochs)):
+        total_real = 0
+        correct_real = 0
+        total_fake = 0
+        correct_fake = 0
+        real_score = 0
+        fake_score = 0
 
-        # Fake images
-        z = torch.randn(batch_size, latent_dim).to("cuda")
-        fake_imgs = G(z)
-        fake_outputs = D(fake_imgs.detach())
+        for i, real_imgs in enumerate(train_loader):
+            G.train()
+            D.train()
+            real_imgs = real_imgs.to("cuda")
+            batch_size = real_imgs.size(0)
 
-        d_loss = torch.mean(D(fake_imgs)) - torch.mean(D(real_imgs))
-        d_loss.backward()
-        optimizer_D.step()
+            # ---------------------
+            #  Train Discriminator
+            # ---------------------
 
-        # Clip discriminator weights
-        for p in D.parameters():
-            p.data.clamp_(-0.01, 0.01)
+            D.zero_grad()
 
-        # Discriminator accuracy
-        total_real += batch_size
-        correct_real += (real_outputs > 0.5).sum().item()
+            # Real images
+            real_outputs = D(real_imgs)
+            real_score += real_outputs.mean().item()
 
-        total_fake += batch_size
-        correct_fake += (fake_outputs <= 0.5).sum().item()
-
-        # ---------------------
-        #  Train Generator
-        # ---------------------
-
-        if (i + 1) % 5 == 0: # Train the generator every 5 batches
-            G.zero_grad()
-
-            # Generate fake images
+            print("realmean: {}".format(real_outputs.mean()))
+            # Fake images
             z = torch.randn(batch_size, latent_dim).to("cuda")
             fake_imgs = G(z)
-            fake_outputs = D(fake_imgs)
+            fake_outputs = D(fake_imgs.detach())
+            fake_score += fake_outputs.mean().item()
+            print("fakemean: {}".format(fake_outputs.mean()))
 
-            # Generator loss
-            g_loss = -torch.mean(D(fake_imgs))
-            g_loss.backward()
-            optimizer_G.step()
+            d_loss = -torch.mean(real_outputs) + torch.mean(fake_outputs)
+            d_loss.backward()
+            optimizer_D.step()
 
-    # Save generated images at the end of each epoch
-    if (epoch + 1) % 10 == 0:
-        save_image(fake_imgs.data[:25], f"{saving_path}/epoch_{epoch + 1}.png", nrow=5, normalize=True)
+            # Clip discriminator weights
+            for p in D.parameters():
+                p.data.clamp_(-0.01, 0.01)
 
-    # Calculate and log discriminator accuracy
-    accuracy_real = correct_real / total_real
-    accuracy_fake = correct_fake / total_fake
+            # Discriminator accuracy
+            total_real += batch_size
+            correct_real += (real_outputs > 0.5).sum().item()
 
-    writer.add_scalar('Accuracy/Real', accuracy_real, epoch)
-    writer.add_scalar('Accuracy/Fake', accuracy_fake, epoch)
-    writer.add_scalar('Loss/Discriminator', d_loss.item(), epoch)
-    writer.add_scalar('Loss/Generator', g_loss.item(), epoch)
+            total_fake += batch_size
+            correct_fake += (fake_outputs <= 0.5).sum().item()
+
+            # ---------------------
+            #  Train Generator
+            # ---------------------
+
+            if (i + 1) % 5 == 0 and i >= 9: # Train the generator every 5 batches
+                G.zero_grad()
+
+                # Generate fake images
+                z = torch.randn(batch_size, latent_dim).to("cuda")
+                fake_imgs = G(z)
+                fake_outputs = D(fake_imgs)
+
+                # Generator loss
+                g_loss = -torch.mean(D(fake_imgs))
+                g_loss.backward()
+                optimizer_G.step()
+
+        accuracy_real = correct_real / total_real
+        accuracy_fake = correct_fake / total_fake
+
+        real_score /= len(train_loader)
+        fake_score /= len(train_loader)
+
+        writer.add_scalar('Accuracy/Real', accuracy_real, epoch)
+        writer.add_scalar('Accuracy/Fake', accuracy_fake, epoch)
+        writer.add_scalar('Loss/Discriminator', d_loss.item(), epoch)
+        writer.add_scalar('Loss/Generator', g_loss.item(), epoch)
+        writer.add_scalar('Score/Real', real_score, epoch)
+        writer.add_scalar('Score/Fake', fake_score, epoch)
+        
+        G.eval()
+        D.eval()
+
+        val_loss = 0
+        val_acc_real = 0
+        val_acc_fake = 0
+        num_val_batches = 0
+
+        for val_imgs in val_loader:
+            val_imgs = val_imgs.to("cuda")
+            batch_size = val_imgs.size(0)
+
+            # Calculate discriminator outputs for real and fake images
+            real_outputs = D(val_imgs)
+            z = torch.randn(batch_size, latent_dim).to("cuda")
+            fake_imgs = G(z)
+            fake_outputs = D(fake_imgs.detach())
+
+            # Calculate discriminator loss and accuracy
+            d_loss = torch.mean(D(fake_imgs)) - torch.mean(D(val_imgs))
+            val_loss += d_loss.item()
+            val_acc_real += (real_outputs > 0.5).sum().item()
+            val_acc_fake += (fake_outputs <= 0.5).sum().item()
+
+            num_val_batches += 1
+
+        # Calculate average loss and accuracy
+        val_loss /= num_val_batches
+        val_acc_real /= len(val_dataset)
+        val_acc_fake /= len(val_dataset)
+
+        # Log validation loss and accuracy
+        writer.add_scalar('Validation/Loss', val_loss, epoch)
+        writer.add_scalar('Validation/Accuracy/Real', val_acc_real, epoch)
+        writer.add_scalar('Validation/Accuracy/Fake', val_acc_fake, epoch)
+
+        # Save the best model
+        if val_acc_real > 0.8 and val_acc_real >= cur_best_real and val_acc_fake > 0.8 and val_acc_fake >= cur_best_fake:
+            print(f"Saving new best model at epoch {epoch}, fold {fold}, with real accuracy {val_acc_real} and fake accuracy {val_acc_fake}")
+            cur_best_real = val_acc_real
+            cur_best_fake = val_acc_fake
+            torch.save({
+                "G": G.state_dict(),
+                "D": D.state_dict()
+            }, f"saved_models/{filename}_best.pt")
+
+        # Save generated images of the current state
+        if (epoch+1) % 10 == 0:
+            current_fake_imgs = G(torch.randn(32, latent_dim).to("cuda"))
+            save_image(current_fake_imgs, f"{saving_path}/fold_{fold}_epoch_{epoch}.png", nrow=8, normalize=True)
+
+    # # Save the model state dictionaries
+    # torch.save({
+    #     "G": G.state_dict(),
+    #     "D": D.state_dict()
+    # }, f"saved_models/{filename}.pt")
 
 # Close TensorBoard writer
 writer.close()
-
-# Save the model state dictionaries
-torch.save({
-    "G": G.state_dict(),
-    "D": D.state_dict()
-}, f"saved_models/{filename}.pt")

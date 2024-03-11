@@ -59,7 +59,7 @@ class Generator_2(nn.Module):
         return img
     
 class Generator_3(nn.Module):
-    def __init__(self, width=369):
+    def __init__(self, width=512):
         super(Generator_3, self).__init__()
 
         self.dim_z = 100
@@ -122,7 +122,7 @@ class Discriminator_2(nn.Module):
         return torch.flatten(x)
     
 class Discriminator_3(nn.Module):
-    def __init__(self, width=369, return_probs=True):
+    def __init__(self, width=512, return_probs=True):
         super(Discriminator_3, self).__init__()
 
         self.module = nn.Sequential(
@@ -131,7 +131,7 @@ class Discriminator_3(nn.Module):
             nn.Linear(2 * width, 2 * width), nn.ReLU(),
             nn.Linear(2 * width, width), nn.ReLU(),
             nn.Linear(width, 1)
-            #, nn.Sigmoid() if return_probs else nn.Sequential(),
+            # ,nn.Sigmoid() if return_probs else nn.Sequential(),
         )
 
     def forward(self, z):
