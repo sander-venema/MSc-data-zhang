@@ -81,7 +81,7 @@ for fold, (train_index, val_index) in enumerate(kf.split(dataset)):
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
-    filename = "wassGP_{0}_5fold_{1}".format(LEARNING_RATE, fold)
+    filename = "wass2_{0}_5fold_{1}".format(LEARNING_RATE, fold)
     saving_path = "generated_images/{0}".format(filename)
     writer = SummaryWriter(f"logs_generation/{filename}")
     os.makedirs(saving_path, exist_ok=True)
@@ -122,14 +122,10 @@ for fold, (train_index, val_index) in enumerate(kf.split(dataset)):
             fake_score += fake_outputs.mean().item()
             d_loss_fake = fake_outputs.mean()
 
-            # real_loss = wasserstein_loss(D(real_imgs), -torch.ones_like(D(real_imgs)))
-            # fake_loss = wasserstein_loss(D(fake_imgs), torch.ones_like(D(fake_imgs)))
-            # d_loss = real_loss + fake_loss
+            # gradient_penalty = calc_gradient_penalty(D, real_imgs.data, fake_imgs.data, batch_size, 369, "cuda", LAMBDA)
 
-            gradient_penalty = calc_gradient_penalty(D, real_imgs.data, fake_imgs.data, batch_size, 369, "cuda", LAMBDA)
-
-            # d_loss = -torch.mean(real_outputs) + torch.mean(fake_outputs)
-            d_loss = d_loss_fake - d_loss_real + gradient_penalty
+            d_loss = -torch.mean(real_outputs) + torch.mean(fake_outputs)
+            # d_loss = d_loss_fake - d_loss_real + gradient_penalty
             d_loss.backward()
             optimizer_D.step()
 
@@ -157,7 +153,6 @@ for fold, (train_index, val_index) in enumerate(kf.split(dataset)):
                 fake_outputs = D(fake_imgs)
 
                 # Generator loss
-                # g_loss = wasserstein_loss(fake_outputs, -torch.ones_like(fake_outputs))
                 g_loss = torch.mean(D(fake_imgs))
                 g_loss.backward(mone)
                 optimizer_G.step()
@@ -213,7 +208,7 @@ for fold, (train_index, val_index) in enumerate(kf.split(dataset)):
         writer.add_scalar('Validation/Accuracy/Fake', val_acc_fake, epoch)
 
         # Save the best model
-        if val_acc_real > 0.8 and val_acc_real >= cur_best_real and val_acc_fake > 0.8 and val_acc_fake >= cur_best_fake and epoch > 50:
+        if val_acc_real > 0.8 and val_acc_real >= cur_best_real and val_acc_fake > 0.8 and val_acc_fake >= cur_best_fake:
             with open(f"saved_models/{filename}_best.txt", "a+") as f:
                 f.write(f"Epoch: {epoch}, Real accuracy: {val_acc_real}, Fake accuracy: {val_acc_fake}\n")
             cur_best_real = val_acc_real
