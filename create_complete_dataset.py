@@ -9,7 +9,8 @@ def list_directories_starting_with(directory, prefix):
 ttv = ['train', 'test', 'val']
 types = ['images', 'labels']
 prefixes = ['BreaDM-Ma-', 'BreaDM-Be-']
-img_class = ['SUB2', 'VIBRANT', 'VIBRANT+C2']
+# img_class = ['SUB2', 'VIBRANT', 'VIBRANT+C2']
+img_class = ['VIBRANT', 'VIBRANT+C2', 'VIBRANT+C4']
 
 directory_path = 'data/seg/'
 
@@ -47,4 +48,4 @@ for split in ttv:
                         
                         os.makedirs(fin_path, exist_ok=True)
                         shutil.copy(img, fin_path)
-                        os.rename(os.path.join(fin_path, filename), os.path.join(fin_path, folder_name + img_class_name + '_' + filename))
+                        os.rename(os.path.join(fin_path, filename), os.path.join(fin_path, folder_name + '_' + img_class_name + '_' + filename))

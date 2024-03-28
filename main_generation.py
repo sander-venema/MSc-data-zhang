@@ -16,6 +16,7 @@ parser.add_argument('--learning_rate', type=float, default=5e-5, help='Learning 
 parser.add_argument('--latent_dim', type=int, default=100, help='Latent dimension')
 parser.add_argument('--num_epochs', type=int, default=1000, help='Number of epochs')
 parser.add_argument('--lamb', type=int, default=0.1, help='Lambda value for gradient penalty')
+parser.add_argument('--complete_dataset', action='store_true', default=False, help='Whether to use the complete dataset')
 
 args = parser.parse_args()
 
@@ -55,7 +56,10 @@ def calc_gradient_penalty(netD, real_data, fake_data, batch_size, dim, device, g
 
 wasserstein_loss = lambda y_true, y_pred: -torch.mean(y_true * y_pred)
 
-dataset = GenerationDataset(root_dir="new_dataset/train/images/", transform=transform)
+if args.complete_dataset:
+    dataset = GenerationDataset(root_dir="complete_dataset/train/images/", transform=transform)
+else:
+    dataset = GenerationDataset(root_dir="new_dataset/train/images/", transform=transform)
 
 # Use KFold for 3-fold cross-validation
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
@@ -81,7 +85,7 @@ for fold, (train_index, val_index) in enumerate(kf.split(dataset)):
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
-    filename = "wass2_{0}_5fold_{1}".format(LEARNING_RATE, fold)
+    filename = "wasslargevib{0}_{1}_5fold_{2}".format(BATCH_SIZE, LEARNING_RATE, fold)
     saving_path = "generated_images/{0}".format(filename)
     writer = SummaryWriter(f"logs_generation/{filename}")
     os.makedirs(saving_path, exist_ok=True)
@@ -220,8 +224,8 @@ for fold, (train_index, val_index) in enumerate(kf.split(dataset)):
 
         # Save generated images of the current state
         if (epoch+1) % 10 == 0:
-            current_fake_imgs = G(torch.randn(32, latent_dim).to("cuda"))
-            save_image(current_fake_imgs, f"{saving_path}/fold_{fold}_epoch_{epoch}.png", nrow=8, normalize=True)
+            current_fake_imgs = G(torch.randn(16, latent_dim).to("cuda"))
+            save_image(current_fake_imgs, f"{saving_path}/fold_{fold}_epoch_{epoch}.png", nrow=4, normalize=True)
 
     # # Save the model state dictionaries
     # torch.save({
