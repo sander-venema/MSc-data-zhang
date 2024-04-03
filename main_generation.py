@@ -91,7 +91,7 @@ for fold, (train_index, val_index) in enumerate(kf.split(dataset)):
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
-    filename = "wassaug{0}_{1}_5fold_{2}".format(BATCH_SIZE, LEARNING_RATE, fold)
+    filename = "wassGPaug{0}_{1}_5fold_{2}".format(BATCH_SIZE, LEARNING_RATE, fold)
     saving_path = "generated_images/{0}".format(filename)
     writer = SummaryWriter(f"logs_generation/{filename}")
     os.makedirs(saving_path, exist_ok=True)
@@ -132,9 +132,9 @@ for fold, (train_index, val_index) in enumerate(kf.split(dataset)):
             fake_score += fake_outputs.mean().item()
             d_loss_fake = fake_outputs.mean()
 
-            # gradient_penalty = calc_gradient_penalty(D, real_imgs.data, fake_imgs.data, batch_size, 369, "cuda", LAMBDA)
+            gradient_penalty = calc_gradient_penalty(D, real_imgs.data, fake_imgs.data, batch_size, 369, "cuda", LAMBDA)
 
-            d_loss = -torch.mean(real_outputs) + torch.mean(fake_outputs)
+            d_loss = -torch.mean(real_outputs) + torch.mean(fake_outputs) + gradient_penalty
             # d_loss = d_loss_fake - d_loss_real + gradient_penalty
             d_loss.backward()
             optimizer_D.step()
