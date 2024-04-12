@@ -11,13 +11,13 @@ from tqdm import tqdm
 import argparse
 
 parser = argparse.ArgumentParser(description='Store training settings')
-parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
-parser.add_argument('--learning_rate', type=float, default=5e-5, help='Learning rate')
-parser.add_argument('--latent_dim', type=int, default=100, help='Latent dimension')
-parser.add_argument('--num_epochs', type=int, default=1000, help='Number of epochs')
-parser.add_argument('--lamb', type=int, default=0.1, help='Lambda value for gradient penalty')
-parser.add_argument('--complete_dataset', action='store_true', default=False, help='Whether to use the complete dataset')
-parser.add_argument('--augmented_dataset', action='store_true', default=False, help='Whether to use the augmented dataset')
+parser.add_argument('-bs', '--batch_size', type=int, default=32, help='Batch size')
+parser.add_argument('-lr', '--learning_rate', type=float, default=5e-5, help='Learning rate')
+parser.add_argument('-ld', '--latent_dim', type=int, default=100, help='Latent dimension')
+parser.add_argument('-ne', '--num_epochs', type=int, default=1000, help='Number of epochs')
+parser.add_argument('-l', '--lamb', type=int, default=0.1, help='Lambda value for gradient penalty')
+parser.add_argument('-fd', '--flip_dataset', action='store_true', default=False, help='Use flipped dataset')
+parser.add_argument('-ad', '--augmented_dataset', action='store_true', default=False, help='Use augmented dataset')
 
 args = parser.parse_args()
 
@@ -57,9 +57,9 @@ def calc_gradient_penalty(netD, real_data, fake_data, batch_size, dim, device, g
 
 wasserstein_loss = lambda y_true, y_pred: -torch.mean(y_true * y_pred)
 
-if args.complete_dataset:
-    dataset = GenerationDataset(root_dir="complete_dataset/train/images/", transform=transform)
-    print("Using complete dataset")
+if args.flip_dataset:
+    dataset = GenerationDataset(root_dir="flip_dataset/train/images/", transform=transform)
+    print("Using flipped dataset")
 elif args.augmented_dataset:
     dataset = GenerationDataset(root_dir="augmented_dataset/train/images/", transform=transform)
     print("Using augmented dataset")

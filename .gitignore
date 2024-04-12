@@ -9,3 +9,4 @@ output_segmentation/
 *.pyc
 complete_dataset/
 augmented_dataset/
+flip_dataset/
