@@ -21,8 +21,25 @@ def apply_augmentations(image, mask):
 
     # Random scaling (uniformly sampled from 0.9 to 1.1)
     scaling_factor = random.uniform(0.9, 1.1)
+    new_width = int(image.shape[1] * scaling_factor)
+    new_height = int(image.shape[0] * scaling_factor)
     image = cv2.resize(image, None, fx=scaling_factor, fy=scaling_factor)
     mask = cv2.resize(mask, None, fx=scaling_factor, fy=scaling_factor)
+
+    if scaling_factor > 1:
+        image = image[(new_height - 369) // 2:(new_height - 369) // 2 + 369,
+                      (new_width - 369) // 2:(new_width - 369) // 2 + 369]
+        mask = mask[(new_height - 369) // 2:(new_height - 369) // 2 + 369,
+                    (new_width - 369) // 2:(new_width - 369) // 2 + 369]
+    else:
+        image = cv2.copyMakeBorder(image, (369 - new_height) // 2, (369 - new_height) // 2,
+                                   (369 - new_width) // 2, (369 - new_width) // 2, cv2.BORDER_CONSTANT, value=0)
+        mask = cv2.copyMakeBorder(mask, (369 - new_height) // 2, (369 - new_height) // 2,
+                                  (369 - new_width) // 2, (369 - new_width) // 2, cv2.BORDER_CONSTANT, value=0)
+
+    if image.shape[0] != 369 or image.shape[1] != 369:
+        image = cv2.resize(image, (369, 369))
+        mask = cv2.resize(mask, (369, 369))        
 
     return image, mask
 
