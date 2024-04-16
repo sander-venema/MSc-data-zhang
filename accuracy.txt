@@ -1,0 +1,10 @@
+wassaug16_5e-05_5fold_4_best.pt: Real Accuracy: 1.0, Fake Accuracy: 1.0
+wassaug32_5e-05_5fold_1_best.pt: Real Accuracy: 1.0, Fake Accuracy: 0.7754342431761787
+wassaug64_5e-05_5fold_0_best.pt: Real Accuracy: 0.0, Fake Accuracy: 1.0
+wassGPaug32_5e-05_5fold_0_best.pt: Real Accuracy: 0.924317617866005, Fake Accuracy: 0.9751861042183623
+wassGPaug32_5e-05_5fold_1_best.pt: Real Accuracy: 0.8957816377171216, Fake Accuracy: 0.9379652605459057
+wassGPaug32_5e-05_5fold_2_best.pt: Real Accuracy: 0.9044665012406948, Fake Accuracy: 0.9267990074441688
+wassGPaug32_5e-05_5fold_3_best.pt: Real Accuracy: 0.8325062034739454, Fake Accuracy: 0.8300248138957816
+wassGPaug32_5e-05_5fold_4_best.pt: Real Accuracy: 0.7667493796526055, Fake Accuracy: 0.9516129032258065
+wassGPaug64_5e-05_5fold_3_best.pt: Real Accuracy: 0.7667493796526055, Fake Accuracy: 0.8610421836228288
+wassGP_5e-05_5fold_2_best.pt: Real Accuracy: 0.5210918114143921, Fake Accuracy: 0.847394540942928

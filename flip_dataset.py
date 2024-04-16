@@ -13,7 +13,7 @@ base_path = 'new_dataset'
 splits = ['train/', 'test/']
 
 # Create directory for augmented dataset
-output_base_path = 'augmented_dataset'
+output_base_path = 'flip_dataset/'
 os.makedirs(output_base_path, exist_ok=True)
 
 # Iterate through train and test splits
