@@ -65,6 +65,9 @@ best_val_loss = float("inf")
 
 print(f"Training {run_name} for {num_epochs} epochs with batch size {BATCH_SIZE}, learning rate {LEARNING_RATE} and loss {loss_short}")
 
+cur_best_dice = 0.0
+cur_best_iou = 0.0
+
 # Train the model
 for epoch in tqdm(range(num_epochs)):
     # Set the model to training mode
@@ -162,6 +165,9 @@ for epoch in tqdm(range(num_epochs)):
     writer.add_scalar("Loss/val", val_loss, epoch)
 
     # Save the model
-    if val_loss < best_val_loss:
-        best_val_loss = val_loss
-        torch.save(model.state_dict(), f"saved_models/segmentation/{run_name}.pth")
+    if dice_val > cur_best_dice and iou_val > cur_best_iou:
+        with open(f"saved_models/{run_name}_best.txt", "a+") as f:
+            f.write(f"Epoch: {epoch}, Dice: {dice_val}, IoU: {iou_val}\n")
+        cur_best_dice = dice_val
+        cur_best_iou = iou_val
+        torch.save(model.state_dict(), f"saved_models/segmentation/{run_name}_best.pth")

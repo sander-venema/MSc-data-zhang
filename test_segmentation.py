@@ -11,15 +11,15 @@ import matplotlib.pyplot as plt
 
 import argparse
 
-def show(imgs):
-    if not isinstance(imgs, list):
-        imgs = [imgs]
-    fig, axs = plt.subplots(ncols=len(imgs), squeeze=False)
-    for i, img in enumerate(imgs):
-        img = img.detach()
-        img = F.to_pil_image(img)
-        axs[0, i].imshow(np.asarray(img))
-        axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+# def show(imgs):
+#     if not isinstance(imgs, list):
+#         imgs = [imgs]
+#     fig, axs = plt.subplots(ncols=len(imgs), squeeze=False)
+#     for i, img in enumerate(imgs):
+#         img = img.detach()
+#         img = F.to_pil_image(img)
+#         axs[0, i].imshow(np.asarray(img))
+#         axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
 
 parser = argparse.ArgumentParser(description='Store test settings')
 parser.add_argument('--model', type=str, default='unet_vgg16_dice_bce_0.0001_new.pth', help='Model name')
