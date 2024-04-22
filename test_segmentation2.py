@@ -77,7 +77,6 @@ for model_name in models:
             outputs = (outputs > 0.5).float()
 
             running_dice += DiceCoefficient(outputs, masks)
-            print(DiceCoefficient(outputs, masks))
             running_pixel_accuracy += PixelAccuracy(outputs, masks)
             running_miou += mIoU(outputs, masks)
             running_precision += precision_score(masks.cpu().numpy().flatten(), outputs.cpu().numpy().flatten(), zero_division=0)
