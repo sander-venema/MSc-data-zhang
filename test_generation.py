@@ -59,7 +59,7 @@ for model in models:
     fake_accuracy = fake_correct / total
 
     # Write accuracy to a txt file
-    with open("accuracy.txt", "a+") as f:
+    with open("accuracy_gen.txt", "a+") as f:
         f.write(f"{model}: ")
         f.write(f"Real Accuracy: {real_accuracy}, ")
         f.write(f"Fake Accuracy: {fake_accuracy}\n")

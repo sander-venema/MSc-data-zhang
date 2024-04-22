@@ -22,7 +22,7 @@ def show(imgs):
         axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
 
 parser = argparse.ArgumentParser(description='Store test settings')
-parser.add_argument('--model', type=str, default='unet_vgg16_dice_bce_0.0001.pth', help='Model name')
+parser.add_argument('--model', type=str, default='unet_vgg16_dice_bce_0.0001_new.pth', help='Model name')
 
 args = parser.parse_args()
 
