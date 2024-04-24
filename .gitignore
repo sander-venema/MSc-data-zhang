@@ -10,3 +10,4 @@ output_segmentation/
 complete_dataset/
 augmented_dataset/
 flip_dataset/
+combined_dataset/

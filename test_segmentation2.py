@@ -54,7 +54,7 @@ for model_name in models:
     model.to("cuda")
     model.eval()
 
-    dataset = SemanticSegmentationDataset('new_dataset/test/images', 'new_dataset/test/labels')
+    dataset = SemanticSegmentationDataset('combined_dataset/test/images', 'combined_dataset/test/labels')
     test_loader = DataLoader(dataset, batch_size=1, shuffle=False)
 
     running_dice = 0.0
