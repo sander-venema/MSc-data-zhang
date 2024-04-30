@@ -167,7 +167,7 @@ for epoch in tqdm(range(num_epochs)):
 
     # Save the model
     if dice_val > cur_best_dice and iou_val > cur_best_iou:
-        with open(f"saved_models/{run_name}_best.txt", "a+") as f:
+        with open(f"saved_models/segmentation/{run_name}_best.txt", "a+") as f:
             f.write(f"Epoch: {epoch}, Dice: {dice_val}, IoU: {iou_val}\n")
         cur_best_dice = dice_val
         cur_best_iou = iou_val

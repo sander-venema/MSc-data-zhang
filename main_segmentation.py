@@ -22,10 +22,9 @@ from tqdm import tqdm
 import argparse
 
 parser = argparse.ArgumentParser(description='Store training settings')
-parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
-parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
-parser.add_argument('--loss', type=int, default=0, help='Loss function; 0: BCEDiceLoss, \
-                    1: IoULoss, 2: DiceLoss, 3: LovaszHingeLoss, 4: Binary_Xloss, 5: FocalLoss, 6: BCELoss, 7: DiceBCELoss')
+parser.add_argument('-b', '--batch_size', type=int, default=8, help='Batch size')
+parser.add_argument('-lr', '--learning_rate', type=float, default=1e-4, help='Learning rate')
+parser.add_argument('-l', '--loss', type=int, default=7, help='Loss function; 0: BCEDiceLoss, 1: IoULoss, 2: DiceLoss, 3: LovaszHingeLoss, 4: Binary_Xloss, 5: FocalLoss, 6: BCELoss, 7: DiceBCELoss')
 
 LOSSES = [BCEDiceLoss(), IoULoss(), DiceLoss(), LovaszHingeLoss(), Binary_Xloss(), FocalLoss(), BCELoss(), DiceBCELoss()]
 
@@ -36,7 +35,7 @@ LEARNING_RATE = args.learning_rate
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-dataset = SegmentationDataset('new_dataset/train', image_transforms, mask_transforms)
+dataset = SegmentationDataset('combined_dataset/train', image_transforms, mask_transforms)
 train_dataset, val_dataset = torch.utils.data.random_split(dataset, [int(0.9 * len(dataset)), len(dataset) - int(0.9 * len(dataset))])
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
@@ -53,7 +52,7 @@ scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 model.to(device)
 
 loss_short = 'bce_dice' if args.loss == 0 else 'iou' if args.loss == 1 else 'dice' if args.loss == 2 else 'lovasz' if args.loss == 3 else 'bce_xloss' if args.loss == 4 else 'focal' if args.loss == 5 else 'bce' if args.loss == 6 else 'dice_bce'
-run_name = "resnet101_{0}_{1}".format(loss_short, LEARNING_RATE)
+run_name = "resnet101_{0}_{1}_comb".format(loss_short, LEARNING_RATE)
 
 writer = SummaryWriter(f"logs_segmentation/{run_name}")
 
@@ -61,6 +60,9 @@ num_epochs = 100
 best_val_loss = float("inf")
 
 print(f"Training {run_name} for {num_epochs} epochs with batch size {BATCH_SIZE}, learning rate {LEARNING_RATE} and loss {loss_short}")
+
+cur_best_dice = 0.0
+cur_best_iou = 0.0
 
 # Train the model
 for epoch in tqdm(range(num_epochs)):
@@ -159,6 +161,9 @@ for epoch in tqdm(range(num_epochs)):
     writer.add_scalar("Loss/val", val_loss, epoch)
 
     # Save the model
-    if val_loss < best_val_loss:
-        best_val_loss = val_loss
-        torch.save(model.state_dict(), f"saved_models/segmentation/{run_name}.pth")
+    if dice_val > cur_best_dice and iou_val > cur_best_iou:
+        with open(f"saved_models/segmentation/{run_name}_best.txt", "a+") as f:
+            f.write(f"Epoch: {epoch}, Dice: {dice_val}, IoU: {iou_val}\n")
+        cur_best_dice = dice_val
+        cur_best_iou = iou_val
+        torch.save(model.state_dict(), f"saved_models/segmentation/{run_name}_best.pth")
