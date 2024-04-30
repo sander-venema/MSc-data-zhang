@@ -6,7 +6,10 @@ from torchvision import transforms
 from backbones_unet.model.unet import Unet
 from backbones_unet.utils.dataset import SemanticSegmentationDataset
 
-from archs.model_wass import Generator, Discriminator
+from utils.metrics import DiceCoefficient, PixelAccuracy, mIoU
+from sklearn.metrics import precision_score, recall_score
+
+from archs.model_wass import Generator_3, Discriminator_3
 from utils.data_stuff import GenerationDataset
 from tqdm import tqdm
 
@@ -16,10 +19,10 @@ transform = transforms.Compose([
     transforms.Normalize((0.5,), (0.5,))
 ])
 
-G = Generator().to("cuda")
-D = Discriminator().to("cuda")
+G = Generator_3().to("cuda")
+D = Discriminator_3().to("cuda")
 
-pretrained_gan = "saved_models/wass_512_5e-05_drop.pt"
+pretrained_gan = "saved_models/generation/wassGPaug32_5e-05_5fold_0_best.pt"
 G.load_state_dict(torch.load(pretrained_gan)["G"], strict=False)
 D.load_state_dict(torch.load(pretrained_gan)["D"], strict=False)
 
@@ -29,17 +32,24 @@ model = Unet(
     num_classes=1,
 )
 
-pretrained_segmentation = "saved_models/segmentation/unet_vgg16bn_dice_bce_0.0001_new.pth"
+pretrained_segmentation = "saved_models/segmentation/unet_vgg16_bn_dice_bce_0.0001_comb_best.pth"
 model.load_state_dict(torch.load(pretrained_segmentation))
 model.to("cuda")
 model.eval()
 
-seg_dataset = SemanticSegmentationDataset("new_dataset/test/images", "new_dataset/test/labels")
+seg_dataset = SemanticSegmentationDataset("combined_dataset/test/images", "combined_dataset/test/labels")
 seg_loader = DataLoader(seg_dataset, batch_size=1, shuffle=False)
 
-gan_dataset = GenerationDataset(root_dir="new_dataset/test/images/", transform=transform)
+gan_dataset = GenerationDataset(root_dir="combined_dataset/test/images/", transform=transform)
 gan_loader = DataLoader(gan_dataset, batch_size=1, shuffle=False)
 it = iter(gan_loader)
+
+# Initialize running means for metrics
+running_iou = 0
+running_dice = 0
+running_precision = 0
+running_recall = 0
+count = 0
 
 for i, (images, masks) in enumerate(seg_loader):
     images = images.to("cuda")
@@ -56,19 +66,26 @@ for i, (images, masks) in enumerate(seg_loader):
         print("Generated new image")
 
     # Let discriminator decide if the image is real or fake, skip if it believes it's fake
-    confidence = D(img).detach().cpu().numpy()
-    print(confidence[0])
+    confidence = D(img)
+    real = torch.round(torch.sigmoid(confidence))
+    # print(f"Confidence: {confidence.item()}\n")
+    # print(f"Real: {real.item()}\n")
 
-    # If the discriminator is not confident, then we can use the image
-    if confidence[0] < 0.5:
-        # with torch.no_grad():
-        #     outputs = model(images)
-        #     outputs = torch.sigmoid(outputs)
-        #     outputs = (outputs > 0.5).float()
-
-        # image = images.cpu().numpy()
-        # mask = outputs.cpu().numpy()
-        # print("Segmentation done")
-        pass
+    if real.item() == 1:
+        # Segment the image
+        seg_output = model(images)
+        seg_output = (seg_output > 0.5).float()
+        
+        # Update running means
+        running_iou += mIoU(seg_output, masks)
+        running_dice += DiceCoefficient(seg_output, masks)
+        running_precision += precision_score(masks.cpu().numpy().flatten(), seg_output.cpu().numpy().flatten(), zero_division=0)
+        running_recall += recall_score(masks.cpu().numpy().flatten(), seg_output.cpu().numpy().flatten(), zero_division=0)
+        count += 1
     else:
-        print("Discriminator was not confident, skipping segmentation")
+        print("Skipping fake image")
+
+print(f"Mean IoU: {running_iou / count}\n")
+print(f"Mean Dice: {running_dice / count}\n")
+print(f"Mean Precision: {running_precision / count}\n")
+print(f"Mean Recall: {running_recall / count}\n")
