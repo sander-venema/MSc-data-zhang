@@ -18,7 +18,7 @@ from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 from torch.utils.data import DataLoader
 
 models_dir = "saved_models/segmentation/"
-models = os.listdir(models_dir)
+models = [f for f in os.listdir(models_dir) if f.endswith("comb_best.pth")]
 
 count = 0
 for model_name in models:
@@ -35,17 +35,31 @@ for model_name in models:
             in_channels=3,
             num_classes=1,
         )
-    elif "unet_vgg16bn" in model_name:
+    elif "unet_vgg16_bn" in model_name:
         print("Using vgg16_bn\n")
         model = Unet(
             backbone='vgg16_bn',
             in_channels=3,
             num_classes=1,
         )
-    else:
+    elif "unet_vgg16" in model_name:
         print("Using vgg16\n")
         model = Unet(
             backbone='vgg16',
+            in_channels=3,
+            num_classes=1,
+        )
+    elif "unet_vgg19_bn" in model_name:
+        print("Using vgg19_bn\n")
+        model = Unet(
+            backbone='vgg19_bn',
+            in_channels=3,
+            num_classes=1,
+        )
+    else:
+        print("Using vgg19\n")
+        model = Unet(
+            backbone='vgg19',
             in_channels=3,
             num_classes=1,
         )
