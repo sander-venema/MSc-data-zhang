@@ -1,0 +1,40 @@
+Mean IoU: 0.6560393654531167
+
+Mean Dice: 0.7267184257507324
+
+Mean Precision: 0.825132308604996
+
+Mean Recall: 0.6922594729753594
+
+Skipped 18 fake images
+(GAN) [s3710971@v100gpu28 MSc-data-zhang]$ python main_pipeline.py 
+Mean IoU: 0.6592788431253345
+
+Mean Dice: 0.7299243211746216
+
+Mean Precision: 0.8280741735137834
+
+Mean Recall: 0.6956535448481254
+
+Skipped 0 fake images
+(GAN) [s3710971@v100gpu28 MSc-data-zhang]$ python main_pipeline.py 
+Mean IoU: 0.8006091358295191
+
+Mean Dice: 0.8626039624214172
+
+Mean Precision: 0.8985957076371704
+
+Mean Recall: 0.8502441531078572
+
+Skipped 0 fake images
+(GAN) [s3710971@v100gpu28 MSc-data-zhang]$ python main_pipeline.py 
+Mean IoU: 0.8000304996686991
+
+Mean Dice: 0.8615598082542419
+
+Mean Precision: 0.8980766279720858
+
+Mean Recall: 0.8491966854671822
+
+Skipped 10 fake images
+

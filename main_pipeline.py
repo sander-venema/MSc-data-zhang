@@ -51,6 +51,8 @@ running_precision = 0
 running_recall = 0
 count = 0
 
+fake_skip = 0
+
 for i, (images, masks) in enumerate(seg_loader):
     images = images.to("cuda")
     masks = masks.to("cuda")
@@ -58,18 +60,16 @@ for i, (images, masks) in enumerate(seg_loader):
     # Get first image from gan_loader
     img = next(it).to("cuda")
 
-    # With odds of 25%, generate a new image
-    if torch.rand(1) < 0.25:
-        G.eval()
-        z = torch.randn(1, 100).to("cuda")
-        img = G(z)
-        print("Generated new image")
+    # # With odds of 25%, generate a new image
+    # if torch.rand(1) < 0.25:
+    #     G.eval()
+    #     z = torch.randn(1, 100).to("cuda")
+    #     img = G(z)
+    #     print("Generated new image")
 
     # Let discriminator decide if the image is real or fake, skip if it believes it's fake
     confidence = D(img)
     real = torch.round(torch.sigmoid(confidence))
-    # print(f"Confidence: {confidence.item()}\n")
-    # print(f"Real: {real.item()}\n")
 
     if real.item() == 1:
         # Segment the image
@@ -83,9 +83,11 @@ for i, (images, masks) in enumerate(seg_loader):
         running_recall += recall_score(masks.cpu().numpy().flatten(), seg_output.cpu().numpy().flatten(), zero_division=0)
         count += 1
     else:
-        print("Skipping fake image")
+        # print("Skipping fake image")
+        fake_skip += 1
 
 print(f"Mean IoU: {running_iou / count}\n")
 print(f"Mean Dice: {running_dice / count}\n")
 print(f"Mean Precision: {running_precision / count}\n")
 print(f"Mean Recall: {running_recall / count}\n")
+print(f"Skipped {fake_skip} fake images")

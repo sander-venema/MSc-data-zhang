@@ -6,11 +6,13 @@ def list_directories_starting_with(directory, prefix):
     directories = [name for name in os.listdir(directory) if os.path.isdir(os.path.join(directory, name)) and name.startswith(prefix)]
     return directories
 
-ttv = ['train', 'test', 'val']
+# ttv = ['train', 'test', 'val']
+ttv = ['test']
 types = ['images', 'labels']
 prefixes = ['BreaDM-Ma-', 'BreaDM-Be-']
 # img_class = ['SUB2', 'VIBRANT', 'VIBRANT+C2']
-img_class = ['VIBRANT', 'VIBRANT+C2', 'VIBRANT+C4']
+# img_class = ['VIBRANT', 'VIBRANT+C2', 'VIBRANT+C4']
+img_class = ['SUB1']
 
 directory_path = 'data/seg/'
 
