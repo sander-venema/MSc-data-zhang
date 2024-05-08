@@ -37,10 +37,10 @@ model.load_state_dict(torch.load(pretrained_segmentation))
 model.to("cuda")
 model.eval()
 
-seg_dataset = SemanticSegmentationDataset("combined_dataset/test/images", "combined_dataset/test/labels")
+seg_dataset = SemanticSegmentationDataset("extra_data/test/images", "extra_data/test/labels")
 seg_loader = DataLoader(seg_dataset, batch_size=1, shuffle=False)
 
-gan_dataset = GenerationDataset(root_dir="combined_dataset/test/images/", transform=transform)
+gan_dataset = GenerationDataset(root_dir="extra_data/test/images/", transform=transform)
 gan_loader = DataLoader(gan_dataset, batch_size=1, shuffle=False)
 it = iter(gan_loader)
 
@@ -75,6 +75,7 @@ for i, (images, masks) in enumerate(seg_loader):
         # Segment the image
         seg_output = model(images)
         seg_output = (seg_output > 0.5).float()
+        new_tensor = torch.squeeze(masks, dim=-1)
         
         # Update running means
         running_iou += mIoU(seg_output, masks)
