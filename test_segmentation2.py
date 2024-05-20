@@ -10,6 +10,7 @@ from sklearn.metrics import precision_score, recall_score
 from skimage import color
 
 import torchvision.transforms.functional as F
+from torchvision import transforms
 import matplotlib.pyplot as plt
 
 from torchvision.models.segmentation import deeplabv3_resnet101
@@ -18,7 +19,7 @@ from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 from torch.utils.data import DataLoader
 
 models_dir = "saved_models/segmentation/"
-models = [f for f in os.listdir(models_dir) if f.endswith("comb_best.pth")]
+models = [f for f in os.listdir(models_dir) if f.endswith("norm_best.pth")]
 
 count = 0
 for model_name in models:
@@ -68,7 +69,7 @@ for model_name in models:
     model.to("cuda")
     model.eval()
 
-    dataset = SemanticSegmentationDataset('combined_dataset/test/images', 'combined_dataset/test/labels')
+    dataset = SemanticSegmentationDataset('new_dataset/test/images', 'new_dataset/test/labels', normalize=transforms.Normalize((0.5,), (0.5,)))
     test_loader = DataLoader(dataset, batch_size=1, shuffle=False)
 
     running_dice = 0.0

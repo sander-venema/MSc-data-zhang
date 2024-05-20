@@ -4,6 +4,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import torch
 import numpy as np
 import torch.optim as optim
+from torchvision import transforms
 from torch.utils.data import DataLoader
 from PIL import Image
 
@@ -24,7 +25,7 @@ parser = argparse.ArgumentParser(description='Store training settings')
 parser.add_argument('-b', '--batch_size', type=int, default=8, help='Batch size')
 parser.add_argument('-lr', '--learning_rate', type=float, default=1e-4, help='Learning rate')
 parser.add_argument('-l', '--loss', type=int, default=7, help='Loss function; 0: BCEDiceLoss, 1: IoULoss, 2: DiceLoss, 3: LovaszHingeLoss, 4: Binary_Xloss, 5: FocalLoss, 6: BCELoss, 7: DiceBCELoss')
-parser.add_argument('-m', '--model', type=str, default='vgg16', help='Model backbone')
+parser.add_argument('-m', '--model', type=str, default='vgg16_bn', help='Model backbone')
 
 LOSSES = [BCEDiceLoss(), IoULoss(), DiceLoss(), LovaszHingeLoss(), Binary_Xloss(), FocalLoss(), BCELoss(), DiceBCELoss()]
 
@@ -36,7 +37,7 @@ BACKBONE = args.model
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-dataset = SemanticSegmentationDataset('combined_dataset/train/images', 'combined_dataset/train/labels')
+dataset = SemanticSegmentationDataset('new_dataset/train/images', 'new_dataset/train/labels', normalize=transforms.Normalize((0.5,), (0.5,)))
 train_dataset, val_dataset = torch.utils.data.random_split(dataset, [int(0.9 * len(dataset)), len(dataset) - int(0.9 * len(dataset))])
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
@@ -45,7 +46,7 @@ val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, drop_l
 model = Unet(
     backbone=BACKBONE,
     in_channels=3,
-    num_classes=1,
+    num_classes=1
 )
 
 criterion = LOSSES[args.loss]
@@ -57,7 +58,7 @@ optimizer = optim.AdamW(params, lr=LEARNING_RATE)
 model.to(device)
 
 loss_short = 'bce_dice' if args.loss == 0 else 'iou' if args.loss == 1 else 'dice' if args.loss == 2 else 'lovasz' if args.loss == 3 else 'bce_xloss' if args.loss == 4 else 'focal' if args.loss == 5 else 'bce' if args.loss == 6 else 'dice_bce'
-run_name = "unet_{0}_{1}_{2}_comb".format(BACKBONE, loss_short, LEARNING_RATE)
+run_name = "unet_{0}_{1}_{2}_norm".format(BACKBONE, loss_short, LEARNING_RATE)
 
 writer = SummaryWriter(f"logs_segmentation/{run_name}")
 

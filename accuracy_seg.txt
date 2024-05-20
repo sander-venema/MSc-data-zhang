@@ -5,3 +5,4 @@ unet_vgg16_bn_dice_bce_0.0001_comb_best.pth: Dice Coefficient: 0.862603962421417
 unet_vgg16_dice_bce_0.0001_comb_best.pth: Dice Coefficient: 0.8263721466064453, Pixel Accuracy: 0.9993272423744202, mIoU: 0.7583910319995397, Precision: 0.8607259908636281, Recall: 0.8129652931004994
 unet_vgg19_bn_dice_bce_0.0001_comb_best.pth: Dice Coefficient: 0.8398502469062805, Pixel Accuracy: 0.9993581771850586, mIoU: 0.7798087115983554, Precision: 0.8803510143158861, Recall: 0.8323559518500542
 unet_vgg19_dice_bce_0.0001_comb_best.pth: Dice Coefficient: 0.8577042818069458, Pixel Accuracy: 0.9993569254875183, mIoU: 0.7902286839450983, Precision: 0.8872262262952297, Recall: 0.8450169470854011
+unet_vgg16_bn_dice_bce_0.0001_norm_best.pth: Dice Coefficient: 0.350766658782959, Pixel Accuracy: 0.9964665174484253, mIoU: 0.27898054686692053, Precision: 0.5076770700230011, Recall: 0.31812008403526226

@@ -32,15 +32,15 @@ model = Unet(
     num_classes=1,
 )
 
-pretrained_segmentation = "saved_models/segmentation/unet_vgg16_bn_dice_bce_0.0001_comb_best.pth"
+pretrained_segmentation = "saved_models/segmentation/unet_vgg16_bn_dice_bce_0.0001_norm_best.pth"
 model.load_state_dict(torch.load(pretrained_segmentation))
 model.to("cuda")
 model.eval()
 
-seg_dataset = SemanticSegmentationDataset("extra_data/test/images", "extra_data/test/labels")
+seg_dataset = SemanticSegmentationDataset("new_dataset/test/images", "new_dataset/test/labels", normalize=transforms.Normalize((0.5,), (0.5,)))
 seg_loader = DataLoader(seg_dataset, batch_size=1, shuffle=False)
 
-gan_dataset = GenerationDataset(root_dir="extra_data/test/images/", transform=transform)
+gan_dataset = GenerationDataset(root_dir="new_dataset/test/images/", transform=transform)
 gan_loader = DataLoader(gan_dataset, batch_size=1, shuffle=False)
 it = iter(gan_loader)
 
@@ -60,13 +60,6 @@ for i, (images, masks) in enumerate(seg_loader):
     # Get first image from gan_loader
     img = next(it).to("cuda")
 
-    # # With odds of 25%, generate a new image
-    # if torch.rand(1) < 0.25:
-    #     G.eval()
-    #     z = torch.randn(1, 100).to("cuda")
-    #     img = G(z)
-    #     print("Generated new image")
-
     # Let discriminator decide if the image is real or fake, skip if it believes it's fake
     confidence = D(img)
     real = torch.round(torch.sigmoid(confidence))
@@ -75,7 +68,6 @@ for i, (images, masks) in enumerate(seg_loader):
         # Segment the image
         seg_output = model(images)
         seg_output = (seg_output > 0.5).float()
-        new_tensor = torch.squeeze(masks, dim=-1)
         
         # Update running means
         running_iou += mIoU(seg_output, masks)
@@ -84,7 +76,6 @@ for i, (images, masks) in enumerate(seg_loader):
         running_recall += recall_score(masks.cpu().numpy().flatten(), seg_output.cpu().numpy().flatten(), zero_division=0)
         count += 1
     else:
-        # print("Skipping fake image")
         fake_skip += 1
 
 print(f"Mean IoU: {running_iou / count}\n")
