@@ -32,15 +32,15 @@ model = Unet(
     num_classes=1,
 )
 
-pretrained_segmentation = "saved_models/segmentation/unet_vgg16_bn_dice_bce_0.0001_norm_best.pth"
+pretrained_segmentation = "saved_models/segmentation/unet_vgg16_bn_dice_bce_0.0001_comb_best.pth"
 model.load_state_dict(torch.load(pretrained_segmentation))
 model.to("cuda")
 model.eval()
 
-seg_dataset = SemanticSegmentationDataset("new_dataset/test/images", "new_dataset/test/labels", normalize=transforms.Normalize((0.5,), (0.5,)))
+seg_dataset = SemanticSegmentationDataset("rider_dataset/images", "rider_dataset/labels")
 seg_loader = DataLoader(seg_dataset, batch_size=1, shuffle=False)
 
-gan_dataset = GenerationDataset(root_dir="new_dataset/test/images/", transform=transform)
+gan_dataset = GenerationDataset(root_dir="rider_dataset/images/", transform=transform)
 gan_loader = DataLoader(gan_dataset, batch_size=1, shuffle=False)
 it = iter(gan_loader)
 
@@ -65,7 +65,7 @@ for i, (images, masks) in enumerate(seg_loader):
     real = torch.round(torch.sigmoid(confidence))
 
     if real.item() == 1:
-        # Segment the image
+            # Segment the image
         seg_output = model(images)
         seg_output = (seg_output > 0.5).float()
         
