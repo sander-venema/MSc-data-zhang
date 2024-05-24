@@ -71,7 +71,7 @@ class Generator_3(nn.Module):
             nn.Linear(2 * width, width), nn.BatchNorm1d(width), nn.ReLU(),
             nn.Linear(width, 369 ** 2), nn.Tanh()
         )
-
+    
     def forward(self, z):
         img = self.module(z)
         img = img.view(img.shape[0], *img_shape)
