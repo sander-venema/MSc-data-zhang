@@ -4,62 +4,112 @@ import numpy as np
 from backbones_unet.model.unet import Unet
 from backbones_unet.utils.dataset import SemanticSegmentationDataset
 
+from utils.metrics import DiceCoefficient, PixelAccuracy, mIoU
+from sklearn.metrics import precision_score, recall_score
+
 from skimage import color
 
 import torchvision.transforms.functional as F
+from torchvision import transforms
 import matplotlib.pyplot as plt
 
-import argparse
+from torchvision.models.segmentation import deeplabv3_resnet101
+from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 
-# def show(imgs):
-#     if not isinstance(imgs, list):
-#         imgs = [imgs]
-#     fig, axs = plt.subplots(ncols=len(imgs), squeeze=False)
-#     for i, img in enumerate(imgs):
-#         img = img.detach()
-#         img = F.to_pil_image(img)
-#         axs[0, i].imshow(np.asarray(img))
-#         axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+from torch.utils.data import DataLoader
 
-parser = argparse.ArgumentParser(description='Store test settings')
-parser.add_argument('--model', type=str, default='unet_vgg16_dice_bce_0.0001_new.pth', help='Model name')
+models_dir = "saved_models/segmentation/"
+models = [f for f in os.listdir(models_dir) if f.endswith("norm_best.pth")]
 
-args = parser.parse_args()
+count = 0
+for model_name in models:
+    print(f"Testing model {count + 1}/{len(models)} with name {model_name}\n")
+    count += 1
+    if "resnet101" in model_name:
+        print("Using resnet101\n")
+        model = deeplabv3_resnet101(weights="DeepLabV3_ResNet101_Weights.DEFAULT")
+        model.classifier = DeepLabHead(2048, 1)
+    elif "unet_resnext101" in model_name:
+        print("Using resnext101_32x8d\n")
+        model = Unet(
+            backbone='resnext101_32x8d',
+            in_channels=3,
+            num_classes=1,
+        )
+    elif "unet_vgg16_bn" in model_name:
+        print("Using vgg16_bn\n")
+        model = Unet(
+            backbone='vgg16_bn',
+            in_channels=3,
+            num_classes=1,
+        )
+    elif "unet_vgg16" in model_name:
+        print("Using vgg16\n")
+        model = Unet(
+            backbone='vgg16',
+            in_channels=3,
+            num_classes=1,
+        )
+    elif "unet_vgg19_bn" in model_name:
+        print("Using vgg19_bn\n")
+        model = Unet(
+            backbone='vgg19_bn',
+            in_channels=3,
+            num_classes=1,
+        )
+    else:
+        print("Using vgg19\n")
+        model = Unet(
+            backbone='vgg19',
+            in_channels=3,
+            num_classes=1,
+        )
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.load_state_dict(torch.load(os.path.join(models_dir, model_name)))
+    model.to("cuda")
+    model.eval()
 
-dataset_path = 'new_dataset/test'
-output_path = 'output_directory'
+    dataset = SemanticSegmentationDataset('new_dataset/test/images', 'new_dataset/test/labels', normalize=transforms.Normalize((0.5,), (0.5,)))
+    test_loader = DataLoader(dataset, batch_size=1, shuffle=False)
 
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
-
-dataset = SemanticSegmentationDataset(os.path.join(dataset_path, 'images'), os.path.join(dataset_path, 'labels'))
-test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
-
-model = Unet(
-    backbone='vgg16',
-    in_channels=3,
-    num_classes=1,
-)
-
-model.load_state_dict(torch.load("saved_models/segmentation/" + args.model))
-model.to(device)
-model.eval()
-
-for i, (images, masks) in enumerate(test_loader):
-    images = images.to(device)
-    masks = masks.to(device)
+    running_dice = 0.0
+    running_pixel_accuracy = 0.0
+    running_miou = 0.0
+    running_precision = 0.0
+    running_recall = 0.0
+    num_batches = 0
 
     with torch.no_grad():
-        outputs = model(images)
-        outputs = torch.sigmoid(outputs)
-        outputs = (outputs > 0.5).float()
+        for i, (images, masks) in enumerate(test_loader):
+            images = images.to("cuda")
+            masks = masks.to("cuda")
+            if "resnet101" in model_name:
+                outputs = model(images)["out"]
+            else:
+                outputs = model(images)
 
-    image = images.cpu().numpy()
-    mask = outputs.cpu().numpy()
+            # outputs = torch.sigmoid(outputs)
+            outputs = (outputs > 0.5).float()
 
-    plt.imshow(image[0].transpose(1, 2, 0), cmap='gray')
-    plt.imshow(mask[0].transpose(1, 2, 0), cmap='autumn', alpha=0.5)
-    plt.imshow(masks[0].cpu().numpy().transpose(1, 2, 0), cmap='winter', alpha=0.5)
-    plt.show()
+            running_dice += DiceCoefficient(outputs, masks)
+            running_pixel_accuracy += PixelAccuracy(outputs, masks)
+            running_miou += mIoU(outputs, masks)
+            running_precision += precision_score(masks.cpu().numpy().flatten(), outputs.cpu().numpy().flatten(), zero_division=0)
+            running_recall += recall_score(masks.cpu().numpy().flatten(), outputs.cpu().numpy().flatten(), zero_division=0)
+
+            num_batches += 1
+
+    running_dice /= num_batches
+    running_pixel_accuracy /= num_batches
+    running_miou /= num_batches
+    running_precision /= num_batches
+    running_recall /= num_batches
+
+    # Write running averages to file
+    with open("accuracy_seg.txt", "a+") as f:
+        f.write(f"{model_name}: ")
+        f.write(f"Dice Coefficient: {running_dice}, ")
+        f.write(f"Pixel Accuracy: {running_pixel_accuracy}, ")
+        f.write(f"mIoU: {running_miou}, ")
+        f.write(f"Precision: {running_precision}, ")
+        f.write(f"Recall: {running_recall}\n")

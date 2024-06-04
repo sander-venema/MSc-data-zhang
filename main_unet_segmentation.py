@@ -53,7 +53,6 @@ criterion = LOSSES[args.loss]
 
 params = [p for p in model.parameters() if p.requires_grad]
 optimizer = optim.AdamW(params, lr=LEARNING_RATE)
-# scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 model.to(device)
 

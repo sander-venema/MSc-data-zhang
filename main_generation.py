@@ -233,11 +233,4 @@ for fold, (train_index, val_index) in enumerate(kf.split(dataset)):
             current_fake_imgs = G(torch.randn(16, latent_dim).to("cuda"))
             save_image(current_fake_imgs, f"{saving_path}/fold_{fold}_epoch_{epoch}.png", nrow=4, normalize=True)
 
-    # # Save the model state dictionaries
-    # torch.save({
-    #     "G": G.state_dict(),
-    #     "D": D.state_dict()
-    # }, f"saved_models/{filename}.pt")
-
-# Close TensorBoard writer
 writer.close()
