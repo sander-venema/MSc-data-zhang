@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-csv_dir = 'csv/wassaug32_5e-05_loss/'
+csv_dir = 'csv/wassGPaug16_5e-05_loss/'
 
 dfs = []
 
@@ -19,4 +19,4 @@ combined_df = pd.concat(dfs, axis=0)
 
 mean_accuracy = combined_df.groupby('Step')['Value'].mean().reset_index()
 
-mean_accuracy.to_csv('csv/mean/wassaug32_5e-05_loss_genloss.csv', index=False)
+mean_accuracy.to_csv('csv/mean/wassGPaug16_5e-05_loss_genloss.csv', index=False)

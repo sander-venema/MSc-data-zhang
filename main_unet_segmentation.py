@@ -69,17 +69,12 @@ print(f"Training {run_name} for {num_epochs} epochs with batch size {BATCH_SIZE}
 cur_best_dice = 0.0
 cur_best_iou = 0.0
 
-# Train the model
 for epoch in tqdm(range(num_epochs)):
-    # Set the model to training mode
     model.train()
 
-    # Initialize the running loss
     running_loss = 0.0
 
-    # Iterate over the training data
     for i, (images, masks) in enumerate(train_loader):
-        # Move the images and masks to the device
         images = images.to(device)
         masks = masks.to(device)
 
@@ -94,16 +89,12 @@ for epoch in tqdm(range(num_epochs)):
         optimizer.step()
         running_loss += loss.item()
 
-    # Compute the average loss
     avg_loss = running_loss / len(train_loader)
 
-    # Add the loss to the TensorBoard writer
     writer.add_scalar("Loss/train", avg_loss, epoch)
 
-    # Set the model to evaluation mode
     model.eval()
 
-    # Initialize the running accuracy
     dice_running = 0.0
     pixel_accuracy_running = 0.0
     iou_running = 0.0
@@ -112,7 +103,6 @@ for epoch in tqdm(range(num_epochs)):
     recall_running = 0.0
     length = 0
 
-    # Iterate over the validation data
     for i, (images, masks) in enumerate(val_loader):
         images = images.to(device)
         masks = masks.to(device)
@@ -145,27 +135,21 @@ for epoch in tqdm(range(num_epochs)):
     pixel_accuracy = pixel_accuracy_running / length
     writer.add_scalar("Metrics/Pixel_acc", pixel_accuracy, epoch)
             
-    # Compute average Dice Coefficient
     dice_val = dice_running / length
     writer.add_scalar("Metrics/Dice", dice_val, epoch)
 
-    # Compute average IoU
     iou_val = iou_running / length
     writer.add_scalar("Metrics/IoU", iou_val, epoch)
 
-    # Compute average precision
     precision_val = precision_running / length
     writer.add_scalar("Metrics/Precision", precision_val, epoch)
 
-    # Compute average recall
     recall_val = recall_running / length
     writer.add_scalar("Metrics/Recall", recall_val, epoch)
 
     val_loss = val_loss_running / len(val_loader)
-    # scheduler.step()
     writer.add_scalar("Loss/val", val_loss, epoch)
 
-    # Save the model
     if dice_val > cur_best_dice and iou_val > cur_best_iou:
         with open(f"saved_models/segmentation/{run_name}_best.txt", "a+") as f:
             f.write(f"Epoch: {epoch}, Dice: {dice_val}, IoU: {iou_val}\n")

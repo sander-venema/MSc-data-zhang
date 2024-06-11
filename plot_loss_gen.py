@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-csv_dir = 'csv/mean/'
+csv_dir = 'csv/mean/appendix'
 
 plt.figure(figsize=(10, 6))
 
@@ -15,8 +15,8 @@ for file_name in os.listdir(csv_dir):
 plt.xlabel("Epoch")
 plt.ylabel("Mean Generator Loss")
 plt.title("Mean Generator Loss across epoch")
-plt.legend(["WGAN Augmented", "WGAN GP Augmented", "WGAN GP"])
-plt.savefig("plots/mean_generator_loss.png")
+plt.legend(["WassAug16", "WassAug64", "WassGPaug16", "WassGPaug64"])
+plt.savefig("plots/mean_generator_loss_appendix.png")
 plt.clf()
 
 for file_name in os.listdir(csv_dir):
@@ -28,6 +28,6 @@ for file_name in os.listdir(csv_dir):
 plt.xlabel("Epoch")
 plt.ylabel("Mean Critic Loss")
 plt.title("Mean Critic Loss across epoch")
-plt.legend(["WGAN Augmented", "WGAN GP Augmented", "WGAN GP"])
-plt.savefig("plots/mean_critic_loss.png")
+plt.legend(["WassAug16", "WassAug64", "WassGPaug16", "WassGPaug64"])
+plt.savefig("plots/mean_critic_loss_appendix.png")
 plt.clf()

@@ -42,12 +42,10 @@ for model in models:
             z = torch.randn(1, 100).to("cuda")
             fake_images = G(z).to("cuda")
 
-            # Compute accuracy for real images
             real_outputs = D(real_images)
             real_predictions = torch.round(torch.sigmoid(real_outputs))
             real_correct += torch.sum(real_predictions == 1).item()
 
-            # Compute accuracy for fake images
             fake_outputs = D(fake_images)
             fake_predictions = torch.round(torch.sigmoid(fake_outputs))
             fake_correct += torch.sum(fake_predictions == 0).item()
